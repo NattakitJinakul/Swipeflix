@@ -1,0 +1,186 @@
+import { doc, updateDoc } from 'firebase/firestore';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { GenreChip } from '@/components/GenreChip';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { db } from '@/src/firebase/config';
+import { useAuth } from '@/src/store/auth';
+import { useSettings } from '@/src/store/settings';
+import { GENRE_MAP } from '@/src/utils/genres';
+
+const LANGS = [
+  { key: 'th-TH', label: 'ไทย' },
+  { key: 'en-US', label: 'English' },
+];
+const REGIONS = [
+  { key: 'TH', label: 'ไทย 🇹🇭' },
+  { key: 'US', label: 'สหรัฐฯ 🇺🇸' },
+];
+const GENRES = Object.entries(GENRE_MAP).map(([id, name]) => ({ id: Number(id), name }));
+
+const MIN_GENRES = 3;
+const MAX_GENRES = 5;
+
+export default function OnboardingScreen() {
+  const scheme = useColorScheme() ?? 'dark';
+  const c = Colors[scheme];
+  const { user } = useAuth();
+  const { setLanguage, setRegion, setFavoriteGenres } = useSettings();
+
+  const [step, setStep] = useState<0 | 1>(0);
+  const [lang, setLang] = useState('th-TH');
+  const [region, setReg] = useState('TH');
+  const [genres, setGenres] = useState<number[]>([]);
+
+  const toggleGenre = (id: number) => {
+    setGenres((prev) => {
+      if (prev.includes(id)) return prev.filter((g) => g !== id);
+      if (prev.length >= MAX_GENRES) return prev;
+      return [...prev, id];
+    });
+  };
+
+  const goStep2 = () => {
+    setLanguage(lang);
+    setRegion(region);
+    setStep(1);
+  };
+
+  const finish = () => {
+    setFavoriteGenres(genres); // flips the root gate (favoriteGenres >= 3 => onboarded)
+    if (user) {
+      // Persist an explicit onboarded flag for cold starts. Best-effort.
+      void updateDoc(doc(db, 'users', user.uid), { 'profile.onboarded': true }).catch(() => {});
+    }
+    // Root gate navigates into (tabs) once settings reflect >= MIN_GENRES.
+  };
+
+  const Segment = ({
+    options,
+    value,
+    onChange,
+  }: {
+    options: { key: string; label: string }[];
+    value: string;
+    onChange: (k: string) => void;
+  }) => (
+    <View style={styles.segment}>
+      {options.map((o) => {
+        const active = o.key === value;
+        return (
+          <Pressable
+            key={o.key}
+            onPress={() => onChange(o.key)}
+            style={[
+              styles.segItem,
+              {
+                backgroundColor: active ? c.primary : c.surface,
+                borderColor: active ? c.primary : c.muted,
+              },
+            ]}
+          >
+            <Text style={[styles.segText, { color: active ? '#fff' : c.text }]}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]}>
+      <View style={styles.progressRow}>
+        {[0, 1].map((i) => (
+          <View
+            key={i}
+            style={[styles.dot, { backgroundColor: i <= step ? c.primary : c.surface }]}
+          />
+        ))}
+      </View>
+
+      {step === 0 ? (
+        <View style={styles.body}>
+          <Text style={[styles.title, { color: c.text }]}>ตั้งค่าเริ่มต้น</Text>
+          <Text style={[styles.subtitle, { color: c.muted }]}>
+            เลือกภาษาและประเทศ เพื่อให้เนื้อหาและช่องทางดูตรงกับคุณ
+          </Text>
+
+          <Text style={[styles.label, { color: c.text }]}>ภาษา</Text>
+          <Segment options={LANGS} value={lang} onChange={setLang} />
+
+          <Text style={[styles.label, { color: c.text }]}>ประเทศ / ภูมิภาค</Text>
+          <Segment options={REGIONS} value={region} onChange={setReg} />
+
+          <View style={styles.spacer} />
+          <Pressable
+            onPress={goStep2}
+            style={({ pressed }) => [
+              styles.cta,
+              { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={styles.ctaText}>ถัดไป</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.body}>
+          <Text style={[styles.title, { color: c.text }]}>แนวหนังที่ชอบ</Text>
+          <Text style={[styles.subtitle, { color: c.muted }]}>
+            เลือก {MIN_GENRES}-{MAX_GENRES} แนว เพื่อจัดชุดการ์ดให้ตรงจริต ({genres.length}/{MAX_GENRES})
+          </Text>
+
+          <ScrollView style={styles.flex} contentContainerStyle={styles.chipWrap}>
+            {GENRES.map((g) => (
+              <GenreChip
+                key={g.id}
+                label={g.name}
+                selected={genres.includes(g.id)}
+                onToggle={() => toggleGenre(g.id)}
+              />
+            ))}
+          </ScrollView>
+
+          <Pressable
+            onPress={finish}
+            disabled={genres.length < MIN_GENRES}
+            style={({ pressed }) => [
+              styles.cta,
+              {
+                backgroundColor: c.primary,
+                opacity: genres.length < MIN_GENRES ? 0.4 : pressed ? 0.85 : 1,
+              },
+            ]}
+          >
+            <Text style={styles.ctaText}>เริ่มใช้งาน</Text>
+          </Pressable>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  progressRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingTop: 12 },
+  dot: { flex: 1, height: 4, borderRadius: 2 },
+  body: { flex: 1, paddingHorizontal: 24, paddingTop: 28, gap: 14 },
+  title: { fontSize: 26, fontWeight: '900' },
+  subtitle: { fontSize: 15, marginBottom: 8 },
+  label: { fontSize: 15, fontWeight: '700', marginTop: 8 },
+  segment: { flexDirection: 'row', gap: 12 },
+  segItem: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  segText: { fontSize: 15, fontWeight: '700' },
+  spacer: { flex: 1 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingVertical: 8 },
+  cta: { borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 16 },
+  ctaText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+});

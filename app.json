@@ -1,17 +1,21 @@
 {
   "expo": {
-    "name": "swipeflix",
+    "name": "Swipeflix",
     "slug": "swipeflix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "swipeflix",
     "userInterfaceStyle": "automatic",
+    "primaryColor": "#E50914",
+    "backgroundColor": "#0B0B0F",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.swipeflix.app"
     },
     "android": {
+      "package": "com.swipeflix.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -33,9 +37,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#0B0B0F",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0B0B0F"
           }
         }
       ]

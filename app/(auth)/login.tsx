@@ -1,0 +1,161 @@
+import { Link } from 'expo-router';
+import { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { GoogleAuthButton } from '@/components/GoogleAuthButton';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/src/store/auth';
+
+function errMsg(e: unknown): string {
+  const code = (e as { code?: string })?.code ?? '';
+  if (code.includes('invalid-credential') || code.includes('wrong-password'))
+    return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+  if (code.includes('user-not-found')) return 'ไม่พบบัญชีนี้';
+  if (code.includes('invalid-email')) return 'อีเมลไม่ถูกต้อง';
+  if (code.includes('network')) return 'เชื่อมต่อเครือข่ายไม่ได้';
+  return e instanceof Error ? e.message : 'เข้าสู่ระบบไม่สำเร็จ';
+}
+
+export default function LoginScreen() {
+  const scheme = useColorScheme() ?? 'dark';
+  const c = Colors[scheme];
+  const { signIn } = useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSignIn = async () => {
+    setError(null);
+    if (!email || !password) {
+      setError('กรอกอีเมลและรหัสผ่าน');
+      return;
+    }
+    setBusy(true);
+    try {
+      await signIn(email.trim(), password);
+      // Root gate handles navigation on success.
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+      >
+        <View style={styles.container}>
+          <View style={styles.brand}>
+            <Text style={[styles.logo, { color: c.primary }]}>SWIPEFLIX</Text>
+            <Text style={[styles.tagline, { color: c.muted }]}>คืนนี้ดูอะไรดี</Text>
+          </View>
+
+          <View style={styles.form}>
+            <Text style={[styles.title, { color: c.text }]}>เข้าสู่ระบบ</Text>
+
+            <TextInput
+              style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
+              placeholder="อีเมล"
+              placeholderTextColor={c.muted}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
+              placeholder="รหัสผ่าน"
+              placeholderTextColor={c.muted}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+
+            {error ? <Text style={[styles.error, { color: c.dislike }]}>{error}</Text> : null}
+
+            <Pressable
+              onPress={onSignIn}
+              disabled={busy}
+              style={({ pressed }) => [
+                styles.primaryBtn,
+                { backgroundColor: c.primary, opacity: busy || pressed ? 0.8 : 1 },
+              ]}
+            >
+              {busy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryBtnText}>เข้าสู่ระบบ</Text>
+              )}
+            </Pressable>
+
+            <View style={styles.dividerRow}>
+              <View style={[styles.line, { backgroundColor: c.muted }]} />
+              <Text style={[styles.or, { color: c.muted }]}>หรือ</Text>
+              <View style={[styles.line, { backgroundColor: c.muted }]} />
+            </View>
+
+            <GoogleAuthButton
+              label="เข้าสู่ระบบด้วย Google"
+              disabled={busy}
+              onBusy={setBusy}
+              onError={(m) => setError(m || null)}
+            />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={{ color: c.muted }}>ยังไม่มีบัญชี? </Text>
+            <Link href="/(auth)/signup" style={[styles.link, { color: c.primary }]}>
+              สมัครสมาชิก
+            </Link>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 40 },
+  brand: { alignItems: 'center', gap: 6 },
+  logo: { fontSize: 34, fontWeight: '900', letterSpacing: 2 },
+  tagline: { fontSize: 14 },
+  form: { gap: 14 },
+  title: { fontSize: 22, fontWeight: '800', marginBottom: 4 },
+  input: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  error: { fontSize: 13 },
+  primaryBtn: {
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  primaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
+  line: { flex: 1, height: StyleSheet.hairlineWidth, opacity: 0.4 },
+  or: { fontSize: 13 },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  link: { fontWeight: '800' },
+});

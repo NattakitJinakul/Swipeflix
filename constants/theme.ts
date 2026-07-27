@@ -8,22 +8,39 @@ import { Platform } from 'react-native';
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+/** Swipeflix brand accent (Netflix-ish film red). Same in both themes. See docs/06-design-ui.md. */
+export const BrandPrimary = '#E50914';
+
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: '#0B0B0F',
+    background: '#FFFFFF',
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    // Swipeflix tokens
+    surface: '#F4F4F6',
+    primary: BrandPrimary,
+    like: '#22C55E',
+    dislike: '#EF4444',
+    watched: '#3B82F6',
+    muted: '#6B7280',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
+    text: '#FFFFFF',
+    background: '#0B0B0F',
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    // Swipeflix tokens
+    surface: '#16161D',
+    primary: BrandPrimary,
+    like: '#22C55E',
+    dislike: '#EF4444',
+    watched: '#3B82F6',
+    muted: '#9CA3AF',
   },
 };
 

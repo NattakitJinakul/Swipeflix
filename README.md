@@ -1,8 +1,28 @@
-# Welcome to your Expo app 👋
+# 🎬 Swipeflix
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**"หนังคืนนี้ดูอะไรดี?"** — swipe movies like Tinder to beat choice paralysis.
 
-## Get started
+Swipe right to save, left to pass, tap for full details, trailer, and where to watch. Built on the [TMDB API](https://www.themoviedb.org/).
+
+## ✨ Features
+
+- **Swipe deck** — Tinder-style cards, 60fps gesture + rotation, LIKE/NOPE/SEEN overlays, haptics, match confetti
+- **Watchlist** — liked / watched lists, synced to Firebase per user
+- **Discover / Search** — trending grid + debounced movie search
+- **Detail** — backdrop, cast, director, YouTube trailer, streaming providers, related movies
+- **Auth** — email/password + Google sign-in, onboarding (language, region, favorite genres)
+- **Subscription tiers** — Free / Plus / Pro (mock payment)
+- **Profile** — taste chart from your likes, stats, settings (theme, region, language)
+
+## 🧱 Tech Stack
+
+- **Expo SDK 54** · expo-router v6 (file-based routing) · TypeScript
+- **Reanimated 4** + gesture-handler — swipe animations on the UI thread
+- **Firebase** (Auth + Firestore) — accounts, watchlist, subscription
+- **TMDB API** — movie data, posters, trailers, watch providers
+- `react-native-youtube-iframe` (trailers), `expo-image` (poster caching), `expo-haptics`
+
+## 🚀 Setup
 
 1. Install dependencies
 
@@ -10,41 +30,33 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure environment — copy the example and fill in your keys
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Fill `.env`:
+   - `EXPO_PUBLIC_TMDB_TOKEN` — TMDB v4 Read Access Token ([get one here](https://www.themoviedb.org/settings/api))
+   - `EXPO_PUBLIC_FIREBASE_*` — Firebase web app config (Auth + Firestore enabled)
+   - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` / `_IOS_CLIENT_ID` / `_ANDROID_CLIENT_ID` — Google OAuth client ids (optional; Google button disables itself if unset)
+
+3. Start the app
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+   Open in Expo Go, an Android emulator, or an iOS simulator.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📑 Documentation
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Full planning docs (architecture, screens, TMDB usage, design, auth/subscription) live in [`docs/`](./docs/README.md).
 
-## Get a fresh project
+## 📸 Screenshots
 
-When you're ready, run:
+_TODO: add screenshots — Swipe deck · Detail · Watchlist · Profile taste chart · Pricing._
 
-```bash
-npm run reset-project
-```
+## 📝 Attribution
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+This product uses the TMDB API but is not endorsed or certified by TMDB.
