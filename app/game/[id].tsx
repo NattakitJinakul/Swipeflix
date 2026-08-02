@@ -249,10 +249,10 @@ export default function GameDetailScreen() {
           {heroUris.length ? (
             <Pressable
               onPress={() => { setViewerIndex(heroIdx); setViewerOpen(true); }}
-              hitSlop={8}
+              hitSlop={12}
               style={styles.expandBtn}
             >
-              <Ionicons name="expand" size={18} color="#fff" />
+              <Ionicons name="expand" size={16} color="rgba(255,255,255,0.55)" />
             </Pressable>
           ) : null}
         </View>
@@ -497,12 +497,12 @@ const styles = StyleSheet.create({
   dots: { position: 'absolute', bottom: 16, alignSelf: 'center', flexDirection: 'row', gap: 5 },
   expandBtn: {
     position: 'absolute',
-    right: 12,
-    bottom: 12,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    right: 10,
+    bottom: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
