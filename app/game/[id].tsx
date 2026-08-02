@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import YoutubePlayer from 'react-native-youtube-iframe';
+import { TrailerPlayer } from '@/components/TrailerPlayer';
 
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { EmptyState } from '@/components/EmptyState';
@@ -279,7 +279,7 @@ export default function GameDetailScreen() {
         {trailerYoutubeId ? (
           <Section title={t('detail.trailer')} color={c.text}>
             <View style={styles.trailer}>
-              <YoutubePlayer height={SCREEN_W * 0.5625} videoId={trailerYoutubeId} play={false} />
+              <TrailerPlayer youtubeId={trailerYoutubeId} height={Math.round(SCREEN_W * 0.5625)} />
             </View>
           </Section>
         ) : null}

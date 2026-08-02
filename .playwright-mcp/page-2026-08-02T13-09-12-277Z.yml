@@ -1,0 +1,26 @@
+- generic [ref=e161]:
+  - generic [ref=e162]: แนวเกมที่ชอบ
+  - generic [ref=e163]: เลือก 3-5 แนว เพื่อจัดชุดการ์ดให้ตรงจริต (1/5)
+  - generic [ref=e180]:
+    - generic [ref=e181] [cursor=pointer]: Fighting
+    - generic [active] [ref=e183] [cursor=pointer]: Shooter
+    - generic [ref=e185] [cursor=pointer]: Platform
+    - generic [ref=e187] [cursor=pointer]: Puzzle
+    - generic [ref=e189] [cursor=pointer]: Racing
+    - generic [ref=e191] [cursor=pointer]: RTS
+    - generic [ref=e193] [cursor=pointer]: RPG
+    - generic [ref=e195] [cursor=pointer]: Simulator
+    - generic [ref=e197] [cursor=pointer]: Sport
+    - generic [ref=e199] [cursor=pointer]: Strategy
+    - generic [ref=e201] [cursor=pointer]: Turn-based
+    - generic [ref=e203] [cursor=pointer]: Tactical
+    - generic [ref=e205] [cursor=pointer]: Hack and slash
+    - generic [ref=e207] [cursor=pointer]: Quiz
+    - generic [ref=e209] [cursor=pointer]: Adventure
+    - generic [ref=e211] [cursor=pointer]: Indie
+    - generic [ref=e213] [cursor=pointer]: Arcade
+    - generic [ref=e215] [cursor=pointer]: Visual Novel
+    - generic [ref=e217] [cursor=pointer]: Card & Board
+    - generic [ref=e219] [cursor=pointer]: MOBA
+    - generic [ref=e221] [cursor=pointer]: Point-and-click
+  - generic: เริ่มใช้งาน

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -31,7 +32,7 @@ export default function OnboardingScreen() {
   const { setLanguage, setRegion, setFavoriteGenres } = useSettings();
 
   const [step, setStep] = useState<0 | 1>(0);
-  const [lang, setLang] = useState('th-TH');
+  const [lang, setLang] = useState('en-US'); // English is the app default
   const [region, setReg] = useState('TH');
   const [genres, setGenres] = useState<string[]>([]);
 
@@ -50,12 +51,13 @@ export default function OnboardingScreen() {
   };
 
   const finish = () => {
-    setFavoriteGenres(genres); // flips the root gate (favoriteGenres >= 3 => onboarded)
+    setFavoriteGenres(genres);
     if (user) {
       // Persist an explicit onboarded flag for cold starts. Best-effort.
       void updateDoc(doc(db, 'users', user.uid), { 'profile.onboarded': true }).catch(() => {});
     }
-    // Root gate navigates into (tabs) once settings reflect >= MIN_GENRES.
+    // Guest-first gate no longer force-redirects out of onboarding, so navigate explicitly.
+    router.replace('/(tabs)');
   };
 
   const Segment = ({

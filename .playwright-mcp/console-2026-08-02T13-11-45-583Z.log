@@ -1,0 +1,14 @@
+[     657ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:8082/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app&transform.reactCompiler=true:178739
+[     686ms] [LOG] Running application "main" with appParams:
+ {rootTag: #root, hydrate: undefined} 
+Development-level warnings: ON.
+Performance optimizations: OFF. @ http://localhost:8082/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app&transform.reactCompiler=true:40444
+[     734ms] [WARNING] "shadow*" style props are deprecated. Use "boxShadow". @ http://localhost:8082/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app&transform.reactCompiler=true:7236
+[     743ms] [WARNING] "textShadow*" style props are deprecated. Use "textShadow". @ http://localhost:8082/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app&transform.reactCompiler=true:7236
+[     765ms] [WARNING] props.pointerEvents is deprecated. Use style.pointerEvents @ http://localhost:8082/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app&transform.reactCompiler=true:7236
+[    1405ms] [ERROR] Access to fetch at 'https://api.igdb.com/v4/games' from origin 'http://localhost:8082' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:8082/:0
+[    1405ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.igdb.com/v4/games:0
+[    1409ms] [ERROR] Access to fetch at 'https://api.igdb.com/v4/games' from origin 'http://localhost:8082' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:8082/:0
+[    1409ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.igdb.com/v4/games:0
+[    1416ms] [ERROR] Access to fetch at 'https://api.igdb.com/v4/games' from origin 'http://localhost:8082' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:8082/:0
+[    1416ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.igdb.com/v4/games:0
