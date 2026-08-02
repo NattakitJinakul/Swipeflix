@@ -7,17 +7,18 @@ import { GenreChip } from '@/components/GenreChip';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { db } from '@/src/firebase/config';
+import { useT } from '@/src/i18n';
 import { useAuth } from '@/src/store/auth';
 import { useSettings } from '@/src/store/settings';
 import { CATEGORIES, categoryLabel } from '@/src/utils/genres';
 
 const LANGS = [
-  { key: 'th-TH', label: 'ไทย' },
-  { key: 'en-US', label: 'English' },
+  { key: 'th-TH', labelKey: 'onboarding.langThai' },
+  { key: 'en-US', labelKey: 'onboarding.langEnglish' },
 ];
 const REGIONS = [
-  { key: 'TH', label: 'ไทย 🇹🇭' },
-  { key: 'US', label: 'สหรัฐฯ 🇺🇸' },
+  { key: 'TH', labelKey: 'onboarding.regionThailand' },
+  { key: 'US', labelKey: 'onboarding.regionUS' },
 ];
 const MIN_GENRES = 3;
 const MAX_GENRES = 5;
@@ -25,6 +26,7 @@ const MAX_GENRES = 5;
 export default function OnboardingScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
+  const t = useT();
   const { user } = useAuth();
   const { setLanguage, setRegion, setFavoriteGenres } = useSettings();
 
@@ -61,7 +63,7 @@ export default function OnboardingScreen() {
     value,
     onChange,
   }: {
-    options: { key: string; label: string }[];
+    options: { key: string; labelKey: string }[];
     value: string;
     onChange: (k: string) => void;
   }) => (
@@ -80,7 +82,7 @@ export default function OnboardingScreen() {
               },
             ]}
           >
-            <Text style={[styles.segText, { color: active ? '#fff' : c.text }]}>{o.label}</Text>
+            <Text style={[styles.segText, { color: active ? '#fff' : c.text }]}>{t(o.labelKey)}</Text>
           </Pressable>
         );
       })}
@@ -100,15 +102,13 @@ export default function OnboardingScreen() {
 
       {step === 0 ? (
         <View style={styles.body}>
-          <Text style={[styles.title, { color: c.text }]}>ตั้งค่าเริ่มต้น</Text>
-          <Text style={[styles.subtitle, { color: c.muted }]}>
-            เลือกภาษาและประเทศ เพื่อให้เนื้อหาและช่องทางดูตรงกับคุณ
-          </Text>
+          <Text style={[styles.title, { color: c.text }]}>{t('onboarding.step1Title')}</Text>
+          <Text style={[styles.subtitle, { color: c.muted }]}>{t('onboarding.step1Sub')}</Text>
 
-          <Text style={[styles.label, { color: c.text }]}>ภาษา</Text>
+          <Text style={[styles.label, { color: c.text }]}>{t('onboarding.langLabel')}</Text>
           <Segment options={LANGS} value={lang} onChange={setLang} />
 
-          <Text style={[styles.label, { color: c.text }]}>ประเทศ / ภูมิภาค</Text>
+          <Text style={[styles.label, { color: c.text }]}>{t('onboarding.regionLabel')}</Text>
           <Segment options={REGIONS} value={region} onChange={setReg} />
 
           <View style={styles.spacer} />
@@ -119,14 +119,14 @@ export default function OnboardingScreen() {
               { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={styles.ctaText}>ถัดไป</Text>
+            <Text style={styles.ctaText}>{t('common.next')}</Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.body}>
-          <Text style={[styles.title, { color: c.text }]}>แนวเกมที่ชอบ</Text>
+          <Text style={[styles.title, { color: c.text }]}>{t('onboarding.step2Title')}</Text>
           <Text style={[styles.subtitle, { color: c.muted }]}>
-            เลือก {MIN_GENRES}-{MAX_GENRES} แนว เพื่อจัดชุดการ์ดให้ตรงจริต ({genres.length}/{MAX_GENRES})
+            {t('onboarding.step2Sub', { min: MIN_GENRES, max: MAX_GENRES, count: genres.length })}
           </Text>
 
           <ScrollView style={styles.flex} contentContainerStyle={styles.chipWrap}>
@@ -151,7 +151,7 @@ export default function OnboardingScreen() {
               },
             ]}
           >
-            <Text style={styles.ctaText}>เริ่มใช้งาน</Text>
+            <Text style={styles.ctaText}>{t('onboarding.start')}</Text>
           </Pressable>
         </View>
       )}

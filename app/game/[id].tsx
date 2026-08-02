@@ -30,6 +30,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { gameImage } from '@/components/game-image';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 import { useGameDetail } from '@/src/hooks/useGameDetail';
 import { useAuth } from '@/src/store/auth';
 import { useLibrary } from '@/src/store/library';
@@ -42,7 +43,7 @@ const HERO_H = 220;
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 type SiteInfo = { label: string; icon: IoniconName; color: string };
 const SITES: Record<number, SiteInfo> = {
-  1: { label: 'เว็บทางการ', icon: 'globe-outline', color: '#4CAF50' },
+  1: { label: 'Official', icon: 'globe-outline', color: '#4CAF50' },
   2: { label: 'Wiki', icon: 'book-outline', color: '#8E9AAF' },
   3: { label: 'Wikipedia', icon: 'book-outline', color: '#8E9AAF' },
   4: { label: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
@@ -67,7 +68,7 @@ const SITES: Record<number, SiteInfo> = {
   26: { label: 'GameJolt', icon: 'game-controller-outline', color: '#2EE6A6' },
 };
 const siteInfo = (cat: number): SiteInfo =>
-  SITES[cat] ?? { label: 'เว็บไซต์', icon: 'open-outline', color: '#9CA3AF' };
+  SITES[cat] ?? { label: 'Website', icon: 'open-outline', color: '#9CA3AF' };
 // Stores + official first, then socials.
 const SITE_ORDER = [1, 13, 23, 22, 24, 16, 17, 15, 12, 10, 11, 9, 18, 6, 5, 4, 8, 14, 26, 25, 19, 3, 2];
 const siteRank = (cat: number): number => {
@@ -81,6 +82,7 @@ export default function GameDetailScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const {
     detail,
@@ -119,9 +121,9 @@ export default function GameDetailScreen() {
   // Guest save prompt — like/played require login. Returns true when the action must be blocked.
   const promptLogin = (): boolean => {
     if (!isGuest) return false;
-    Alert.alert('เข้าสู่ระบบ', 'บันทึกเกมที่ชอบต้องเข้าสู่ระบบก่อน', [
-      { text: 'ยกเลิก', style: 'cancel' },
-      { text: 'เข้าสู่ระบบ', onPress: () => router.push('/(auth)/login') },
+    Alert.alert(t('guest.title'), t('guest.body'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.signIn'), onPress: () => router.push('/(auth)/login') },
     ]);
     return true;
   };
@@ -142,7 +144,7 @@ export default function GameDetailScreen() {
   const onShare = () => {
     if (!detail) return;
     void Share.share({
-      message: `${detail.name}${detail.year ? ` (${detail.year})` : ''} — เจอใน Swipeplay 🎮`,
+      message: `${detail.name}${detail.year ? ` (${detail.year})` : ''} ${t('detail.shareSuffix')}`,
     }).catch(() => {});
   };
 
@@ -163,9 +165,9 @@ export default function GameDetailScreen() {
       <View style={[styles.center, { backgroundColor: c.background }]}>
         <EmptyState
           icon="alert-circle-outline"
-          title="โหลดข้อมูลไม่สำเร็จ"
-          subtitle="ตรวจสอบการเชื่อมต่อแล้วลองใหม่"
-          actionLabel="กลับ"
+          title={t('detail.errorTitle')}
+          subtitle={t('detail.errorSub')}
+          actionLabel={t('common.back')}
           onAction={() => router.back()}
         />
       </View>
@@ -263,20 +265,20 @@ export default function GameDetailScreen() {
         {inLibrary ? (
           <View style={[styles.libHint, { backgroundColor: c.surface }]}>
             <Ionicons name="checkmark" size={16} color={c.like} />
-            <Text style={[styles.libHintText, { color: c.text }]}>อยู่ในคลังแล้ว</Text>
+            <Text style={[styles.libHintText, { color: c.text }]}>{t('detail.inLibrary')}</Text>
           </View>
         ) : null}
 
         {/* Summary */}
         {summary ? (
-          <Section title="เกี่ยวกับเกม" color={c.text}>
+          <Section title={t('detail.about')} color={c.text}>
             <Text style={[styles.body, { color: c.muted }]}>{summary}</Text>
           </Section>
         ) : null}
 
         {/* Trailer (YouTube) */}
         {trailerYoutubeId ? (
-          <Section title="ตัวอย่าง" color={c.text}>
+          <Section title={t('detail.trailer')} color={c.text}>
             <View style={styles.trailer}>
               <YoutubePlayer height={SCREEN_W * 0.5625} videoId={trailerYoutubeId} play={false} />
             </View>
@@ -296,26 +298,32 @@ export default function GameDetailScreen() {
 
         {/* Studios */}
         {developers.length || publishers.length ? (
-          <Section title="ทีมพัฒนา" color={c.text}>
+          <Section title={t('detail.studios')} color={c.text}>
             {developers.length ? (
               <Text style={[styles.body, { color: c.muted }]}>
-                ผู้พัฒนา: <Text style={{ color: c.text, fontWeight: '700' }}>{developers.join(' · ')}</Text>
+                {t('detail.developer')}: <Text style={{ color: c.text, fontWeight: '700' }}>{developers.join(' · ')}</Text>
               </Text>
             ) : null}
             {publishers.length ? (
-              <Text style={[styles.body, { color: c.muted }]}>ผู้จัดจำหน่าย: {publishers.join(' · ')}</Text>
+              <Text style={[styles.body, { color: c.muted }]}>{t('detail.publisher')}: {publishers.join(' · ')}</Text>
             ) : null}
           </Section>
         ) : null}
 
         {/* Websites / stores */}
         {websites.length ? (
-          <Section title="เว็บ / ร้านค้า" color={c.text}>
+          <Section title={t('detail.sites')} color={c.text}>
             <View style={styles.chipWrap}>
               {[...websites]
                 .sort((a, b) => siteRank(a.category) - siteRank(b.category))
                 .map((w) => {
                   const info = siteInfo(w.category);
+                  const label =
+                    w.category === 1
+                      ? t('detail.officialSite')
+                      : SITES[w.category]
+                        ? info.label
+                        : t('detail.website');
                   return (
                     <Pressable
                       key={`${w.category}-${w.url}`}
@@ -326,7 +334,7 @@ export default function GameDetailScreen() {
                       ]}
                     >
                       <Ionicons name={info.icon} size={16} color={info.color} />
-                      <Text style={[styles.chipText, { color: c.text }]}>{info.label}</Text>
+                      <Text style={[styles.chipText, { color: c.text }]}>{label}</Text>
                     </Pressable>
                   );
                 })}
@@ -336,7 +344,7 @@ export default function GameDetailScreen() {
 
         {/* Similar games */}
         {similar.length ? (
-          <Section title="เกมแนวเดียวกัน" color={c.text}>
+          <Section title={t('detail.similar')} color={c.text}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
               {similar.map((g: GameLite) => {
                 const uri = gameImage(g.image);

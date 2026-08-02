@@ -62,6 +62,7 @@ function RootNavigator() {
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="game/[id]" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="play" options={{ headerShown: false }} />
+      <Stack.Screen name="community" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );

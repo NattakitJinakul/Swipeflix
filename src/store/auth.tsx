@@ -1,5 +1,6 @@
 /**
- * Auth context. Wraps observeAuth, loads the user's profile doc, exposes sign in/up/out + Google.
+ * Auth context. Wraps observeAuth, loads the user's profile doc, exposes sign in/up/out + Google
+ * and a profile updater (display name / avatar).
  */
 import type { User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -20,21 +21,21 @@ import {
   signUpEmail,
 } from '../firebase/auth';
 import { db } from '../firebase/config';
-import { getSubscription } from '../firebase/subscription';
-import type { Plan, UserProfile } from '../types/user';
+import { updateProfileFields, type ProfileFields } from '../firebase/profiles';
+import type { UserProfile } from '../types/user';
 
 export type AuthContextValue = {
   user: User | null;
   /** Guest-first: true when no signed-in user. Library runs in-memory; saves prompt login. */
   isGuest: boolean;
   profile: UserProfile | null;
-  /** Current subscription plan. Source of truth is the subscription doc; 'free' when absent/offline. */
-  plan: Plan;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signOut: () => Promise<void>;
   googleSignIn: (idToken: string) => Promise<void>;
+  /** Patch the signed-in user's profile (display name / avatar) — Firestore + local state. */
+  updateProfile: (fields: ProfileFields) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -53,20 +54,9 @@ async function loadProfile(uid: string): Promise<UserProfile | null> {
   return (snap.data().profile as UserProfile | undefined) ?? null;
 }
 
-/** Read the subscription plan; never throws — defaults to 'free' on any failure/absence. */
-async function loadPlan(uid: string): Promise<Plan> {
-  try {
-    const sub = await getSubscription(uid);
-    return sub?.plan ?? 'free';
-  } catch {
-    return 'free';
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [plan, setPlan] = useState<Plan>('free');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,15 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u);
       if (u) {
         // Timeout-guarded so a slow/unconfigured Firestore never freezes the auth gate.
-        const [prof, pl] = await Promise.all([
-          withTimeout(loadProfile(u.uid), 5000, null),
-          withTimeout(loadPlan(u.uid), 5000, 'free' as Plan),
-        ]);
+        const prof = await withTimeout(loadProfile(u.uid), 5000, null);
         setProfile(prof);
-        setPlan(pl);
       } else {
         setProfile(null);
-        setPlan('free');
       }
       setLoading(false);
     });
@@ -95,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(
     async (email: string, password: string, displayName: string) => {
-      // Resolve as soon as the auth account exists; observeAuth loads profile/plan.
+      // Resolve as soon as the auth account exists; observeAuth loads the profile.
       await signUpEmail(email, password, displayName);
     },
     []
@@ -109,9 +94,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await googleCredential(idToken);
   }, []);
 
+  const updateProfile = useCallback(
+    async (fields: ProfileFields) => {
+      const uid = user?.uid;
+      if (!uid) return;
+      await updateProfileFields(uid, fields);
+      setProfile((prev) => (prev ? { ...prev, ...fields } : prev));
+    },
+    [user?.uid]
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isGuest: !user, profile, plan, loading, signIn, signUp, signOut, googleSignIn }),
-    [user, profile, plan, loading, signIn, signUp, signOut, googleSignIn]
+    () => ({
+      user,
+      isGuest: !user,
+      profile,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      googleSignIn,
+      updateProfile,
+    }),
+    [user, profile, loading, signIn, signUp, signOut, googleSignIn, updateProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

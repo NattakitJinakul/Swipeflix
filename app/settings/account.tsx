@@ -1,50 +1,52 @@
 /**
- * Account settings — edit name/avatar (mock), change email/password (mock),
- * logout (useAuth.signOut), delete account (confirm dialog, mock).
- * See docs/10-profile-settings.md (บัญชี).
+ * Account settings — edit display name + avatar (real: Firestore profile), reset password
+ * (Firebase sendPasswordResetEmail), sign out, delete account (Firebase deleteUser).
  */
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { deleteUser, sendPasswordResetEmail } from 'firebase/auth';
 import { useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Avatar } from '@/components/Avatar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/src/store';
+import { auth } from '@/src/firebase/config';
+import { useT } from '@/src/i18n';
+import { useAuth } from '@/src/store/auth';
 
 export default function AccountScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const router = useRouter();
-  const { user, profile, signOut } = useAuth();
+  const t = useT();
+  const { user, profile, signOut, updateProfile } = useAuth();
 
   const [name, setName] = useState(profile?.displayName ?? user?.displayName ?? '');
   const email = profile?.email ?? user?.email ?? '';
-  const avatar = profile?.avatar ?? user?.photoURL ?? null;
-  const initial = (name.trim().charAt(0) || '?').toUpperCase();
 
   const saveName = () => {
-    // TODO: wire to updateProfile / Firestore. Mock for now.
-    Alert.alert('บันทึกชื่อแล้ว', name.trim() ? `ชื่อใหม่: ${name.trim()}` : 'ชื่อว่าง');
+    const trimmed = name.trim();
+    if (!trimmed) {
+      Alert.alert(t('account.nameEmpty'));
+      return;
+    }
+    void updateProfile({ displayName: trimmed }).catch(() => {});
+    Alert.alert(t('account.nameSaved'));
   };
 
-  const notImplemented = (what: string) =>
-    Alert.alert(what, 'ฟีเจอร์นี้จะเปิดใช้เร็ว ๆ นี้');
+  const changePassword = () => {
+    if (!email) return;
+    sendPasswordResetEmail(auth, email)
+      .then(() => Alert.alert(t('account.passwordResetSent'), t('account.passwordResetSentBody', { email })))
+      .catch(() => Alert.alert(t('account.changePassword'), t('common.tryAgain')));
+  };
 
   const doLogout = () => {
-    Alert.alert('ออกจากระบบ', 'ต้องการออกจากระบบใช่ไหม?', [
-      { text: 'ยกเลิก', style: 'cancel' },
+    Alert.alert(t('account.signOutConfirm'), t('account.signOutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'ออกจากระบบ',
+        text: t('common.signOut'),
         style: 'destructive',
         onPress: () => {
           void signOut().catch(() => {});
@@ -55,15 +57,27 @@ export default function AccountScreen() {
   };
 
   const doDelete = () => {
-    Alert.alert('ลบบัญชี', 'การลบบัญชีถาวรและกู้คืนไม่ได้ ต้องการดำเนินการต่อ?', [
-      { text: 'ยกเลิก', style: 'cancel' },
+    Alert.alert(t('account.deleteConfirm'), t('account.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'ลบบัญชี',
+        text: t('account.deleteAccount'),
         style: 'destructive',
-        // TODO: wire to real account deletion. Mock: sign out.
         onPress: () => {
-          void signOut().catch(() => {});
-          router.replace('/(tabs)');
+          const cur = auth.currentUser;
+          if (!cur) {
+            router.replace('/(tabs)');
+            return;
+          }
+          deleteUser(cur)
+            .then(() => router.replace('/(tabs)'))
+            .catch((e: unknown) => {
+              const code = (e as { code?: string })?.code ?? '';
+              if (code === 'auth/requires-recent-login') {
+                Alert.alert(t('account.deleteAccount'), t('account.deleteReauthNeeded'));
+              } else {
+                Alert.alert(t('account.deleteFailed'));
+              }
+            });
         },
       },
     ]);
@@ -74,38 +88,32 @@ export default function AccountScreen() {
       style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.content}
     >
-      {/* Avatar */}
+      {/* Avatar (editable — preset or upload) */}
       <View style={styles.avatarWrap}>
-        {avatar ? (
-          <Image source={{ uri: avatar }} style={styles.avatar} contentFit="cover" />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: c.primary }]}>
-            <Text style={styles.avatarInitial}>{initial}</Text>
-          </View>
-        )}
-        <Pressable
-          onPress={() => notImplemented('เปลี่ยนรูปโปรไฟล์')}
-          style={({ pressed }) => [styles.avatarEdit, { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons name="camera" size={16} color={c.text} />
-          <Text style={[styles.avatarEditText, { color: c.text }]}>เปลี่ยนรูป</Text>
-        </Pressable>
+        <Avatar
+          value={profile?.avatar ?? user?.photoURL ?? null}
+          name={name}
+          size={96}
+          editable
+          uploadUid={user?.uid}
+          onChange={(url) => void updateProfile({ avatar: url }).catch(() => {})}
+        />
       </View>
 
       {/* Name */}
-      <Field label="ชื่อที่แสดง" color={c.muted}>
+      <Field label={t('account.nameLabel')} color={c.muted}>
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder="ชื่อของคุณ"
+          placeholder={t('account.namePlaceholder')}
           placeholderTextColor={c.muted}
           style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
         />
       </Field>
-      <PrimaryButton c={c} label="บันทึกชื่อ" onPress={saveName} />
+      <PrimaryButton c={c} label={t('account.saveName')} onPress={saveName} />
 
       {/* Email (read-only display) */}
-      <Field label="อีเมล" color={c.muted}>
+      <Field label={t('account.emailLabel')} color={c.muted}>
         <View style={[styles.input, styles.readonly, { backgroundColor: c.surface }]}>
           <Text style={{ color: c.text }} numberOfLines={1}>
             {email || '—'}
@@ -114,14 +122,13 @@ export default function AccountScreen() {
       </Field>
 
       <View style={styles.list}>
-        <ListButton c={c} icon="mail-outline" label="เปลี่ยนอีเมล" onPress={() => notImplemented('เปลี่ยนอีเมล')} />
-        <ListButton c={c} icon="key-outline" label="เปลี่ยนรหัสผ่าน" onPress={() => notImplemented('เปลี่ยนรหัสผ่าน')} last />
+        <ListButton c={c} icon="key-outline" label={t('account.changePassword')} onPress={changePassword} last />
       </View>
 
       {/* Danger zone */}
       <View style={styles.list}>
-        <ListButton c={c} icon="log-out-outline" label="ออกจากระบบ" tint={c.text} onPress={doLogout} />
-        <ListButton c={c} icon="trash-outline" label="ลบบัญชี" tint={c.dislike} onPress={doDelete} last />
+        <ListButton c={c} icon="log-out-outline" label={t('common.signOut')} tint={c.text} onPress={doLogout} />
+        <ListButton c={c} icon="trash-outline" label={t('account.deleteAccount')} tint={c.dislike} onPress={doDelete} last />
       </View>
     </ScrollView>
   );
@@ -184,18 +191,6 @@ function ListButton({
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 16 },
   avatarWrap: { alignItems: 'center', gap: 10, marginTop: 8 },
-  avatar: { width: 96, height: 96, borderRadius: 999 },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontSize: 40, fontWeight: '900' },
-  avatarEdit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  avatarEditText: { fontWeight: '700', fontSize: 13 },
   field: { gap: 6 },
   fieldLabel: { fontSize: 13, fontWeight: '700', paddingHorizontal: 4 },
   input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },

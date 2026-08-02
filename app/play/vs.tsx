@@ -1,7 +1,8 @@
 /**
- * "VS ตัวต่อตัว" — head-to-head. Two games shown side by side; tap the one you like more.
- * King-of-the-hill: the winner stays and faces a fresh challenger. Wins are tallied per game id.
- * After ROUNDS picks, show "อันดับเกมที่คุณเลือก" ranking + "เล่นอีกครั้ง". Guest-friendly.
+ * "VS" — head-to-head. Two large game covers face off; tap the one you prefer.
+ * King-of-the-hill: the winner stays and meets a fresh challenger. Wins tallied per game id.
+ * After ROUNDS picks, a ranking ("Your top picks") with medals + Play again. Guest-friendly.
+ * Data logic unchanged — only the UI/UX is redesigned.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -14,10 +15,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 import { versusGames } from '@/src/api/endpoints';
 import type { GameLite } from '@/src/types/game';
 
 const ROUNDS = 12;
+const MEDALS = ['#FBBF24', '#CBD5E1', '#D08B5B']; // gold / silver / bronze
 
 const pickIndex = (n: number) => Math.floor(Math.random() * n);
 const shuffle = <T,>(arr: T[]): T[] => {
@@ -35,14 +38,15 @@ export default function VersusGame() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const [phase, setPhase] = useState<Phase>('loading');
-  const [deck, setDeck] = useState<GameLite[]>([]); // shuffled queue of challengers
+  const [deck, setDeck] = useState<GameLite[]>([]);
   const [pair, setPair] = useState<[GameLite, GameLite] | null>(null);
-  const [cursor, setCursor] = useState(0); // next challenger index in deck
+  const [cursor, setCursor] = useState(0);
   const [round, setRound] = useState(0);
   const [wins, setWins] = useState<Map<number, number>>(new Map());
-  const [flash, setFlash] = useState<number | null>(null); // id of just-picked (win flash)
+  const [flash, setFlash] = useState<number | null>(null);
 
   const start = useCallback((games: GameLite[]) => {
     const d = shuffle(games);
@@ -92,11 +96,9 @@ export default function VersusGame() {
         setPhase('result');
         return;
       }
-      // King of the hill: winner stays, pull a fresh challenger from the deck.
       let idx = cursor;
       let challenger = deck[idx];
       if (!challenger || challenger.id === winner.id) {
-        // deck exhausted or clash -> reshuffle remaining
         const rest = deck.filter((g) => g.id !== winner.id);
         challenger = rest[pickIndex(rest.length)];
         setDeck(shuffle(deck));
@@ -106,7 +108,7 @@ export default function VersusGame() {
       setCursor(idx + 1);
       setRound(nextRound);
       setFlash(null);
-    }, 260);
+    }, 300);
   };
 
   const ranking = [...wins.entries()]
@@ -119,7 +121,7 @@ export default function VersusGame() {
       <Pressable hitSlop={10} onPress={() => router.back()} style={styles.backBtn}>
         <Ionicons name="chevron-back" size={26} color={c.text} />
       </Pressable>
-      <Text style={[styles.topTitle, { color: c.text }]}>VS ตัวต่อตัว</Text>
+      <Text style={[styles.topTitle, { color: c.text }]}>{t('play.vsTitle')}</Text>
       <View style={styles.backBtn} />
     </View>
   );
@@ -141,8 +143,8 @@ export default function VersusGame() {
         {Header}
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={48} color={c.muted} />
-          <Text style={[styles.errTitle, { color: c.text }]}>โหลดเกมไม่สำเร็จ</Text>
-          <Text style={[styles.errSub, { color: c.muted }]}>ลองใหม่อีกครั้ง</Text>
+          <Text style={[styles.errTitle, { color: c.text }]}>{t('play.loadFailTitle')}</Text>
+          <Text style={[styles.errSub, { color: c.muted }]}>{t('play.loadFailSub')}</Text>
         </View>
       </View>
     );
@@ -153,21 +155,24 @@ export default function VersusGame() {
       <View style={[styles.root, { backgroundColor: c.background }]}>
         {Header}
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.resultHead, { color: c.text }]}>อันดับเกมที่คุณเลือก</Text>
-          <Text style={[styles.resultSub, { color: c.muted }]}>จาก {ROUNDS} รอบ</Text>
+          <Text style={[styles.resultHead, { color: c.text }]}>{t('play.vsResultHead')}</Text>
+          <Text style={[styles.resultSub, { color: c.muted }]}>{t('play.vsResultSub', { n: ROUNDS })}</Text>
           {ranking.map((r, i) => (
             <View key={r.game.id} style={[styles.rankRow, { backgroundColor: c.surface }]}>
-              <Text style={[styles.rankNum, { color: i === 0 ? c.primary : c.muted }]}>{i + 1}</Text>
+              {i < 3 ? (
+                <View style={[styles.medal, { backgroundColor: MEDALS[i] }]}>
+                  <Ionicons name="trophy" size={16} color="#1A1A00" />
+                </View>
+              ) : (
+                <Text style={[styles.rankNum, { color: c.muted }]}>{i + 1}</Text>
+              )}
               <Image source={{ uri: r.game.image ?? undefined }} style={styles.rankCover} contentFit="cover" />
               <View style={styles.rankBody}>
                 <Text numberOfLines={1} style={[styles.rankName, { color: c.text }]}>
                   {r.game.name}
                 </Text>
-                <Text style={[styles.rankWins, { color: c.muted }]}>
-                  ชนะ {r.wins} ครั้ง
-                </Text>
+                <Text style={[styles.rankWins, { color: c.muted }]}>{t('play.vsWins', { n: r.wins })}</Text>
               </View>
-              {i === 0 ? <Ionicons name="trophy" size={22} color={c.primary} /> : null}
             </View>
           ))}
           <Pressable
@@ -178,7 +183,7 @@ export default function VersusGame() {
             style={[styles.replayBtn, { backgroundColor: c.primary }]}
           >
             <Ionicons name="refresh" size={20} color="#fff" />
-            <Text style={styles.replayText}>เล่นอีกครั้ง</Text>
+            <Text style={styles.replayText}>{t('play.vsReplay')}</Text>
           </Pressable>
         </ScrollView>
       </View>
@@ -191,13 +196,13 @@ export default function VersusGame() {
       {Header}
       <View style={styles.progressWrap}>
         <Text style={[styles.progressText, { color: c.muted }]}>
-          รอบ {Math.min(round + 1, ROUNDS)} / {ROUNDS}
+          {t('play.vsRound', { n: Math.min(round + 1, ROUNDS), total: ROUNDS })}
         </Text>
         <View style={[styles.progressTrack, { backgroundColor: c.surface }]}>
           <View style={[styles.progressFill, { backgroundColor: c.primary, width: `${(round / ROUNDS) * 100}%` }]} />
         </View>
       </View>
-      <Text style={[styles.prompt, { color: c.text }]}>ชอบอันไหนมากกว่า?</Text>
+      <Text style={[styles.prompt, { color: c.text }]}>{t('play.vsPrompt')}</Text>
 
       <View style={styles.arena}>
         {pair
@@ -216,7 +221,7 @@ export default function VersusGame() {
                   ]}
                 >
                   <Image source={{ uri: g.image ?? undefined }} style={styles.vsCover} contentFit="cover" transition={200} />
-                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.vsShade} pointerEvents="none" />
+                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.vsShade} pointerEvents="none" />
                   <View style={styles.vsMeta}>
                     <Text numberOfLines={2} style={styles.vsName}>
                       {g.name}
@@ -230,16 +235,23 @@ export default function VersusGame() {
                   </View>
                   {isFlash ? (
                     <View style={styles.winBadge}>
-                      <Ionicons name="checkmark" size={26} color="#fff" />
+                      <Ionicons name="checkmark" size={30} color="#fff" />
                     </View>
                   ) : null}
                 </Pressable>
               );
             })
           : null}
-        <View style={[styles.vsBadge, { backgroundColor: c.background, borderColor: c.primary }]}>
-          <Text style={[styles.vsBadgeText, { color: c.primary }]}>VS</Text>
-        </View>
+
+        {/* Center VS badge */}
+        <LinearGradient
+          colors={[c.primary, '#FF5A67']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.vsBadge, { borderColor: c.background }]}
+        >
+          <Text style={styles.vsBadgeText}>VS</Text>
+        </LinearGradient>
       </View>
     </View>
   );
@@ -254,17 +266,22 @@ const styles = StyleSheet.create({
   errTitle: { fontSize: 18, fontWeight: '700', marginTop: 6 },
   errSub: { fontSize: 14 },
   progressWrap: { paddingHorizontal: 16, paddingTop: 4, gap: 6 },
-  progressText: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  progressText: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
   progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 3 },
-  prompt: { textAlign: 'center', fontSize: 20, fontWeight: '800', marginTop: 16, marginBottom: 4 },
-  arena: { flex: 1, flexDirection: 'row', gap: 12, padding: 16, alignItems: 'center' },
+  prompt: { textAlign: 'center', fontSize: 22, fontWeight: '900', marginTop: 16, marginBottom: 4 },
+  arena: { flex: 1, flexDirection: 'row', gap: 14, padding: 16, alignItems: 'center' },
   vsCard: {
     flex: 1,
-    height: '92%',
-    borderRadius: 20,
+    height: '94%',
+    borderRadius: 22,
     overflow: 'hidden',
-    borderWidth: 2.5,
+    borderWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 8,
   },
   vsCover: { width: '100%', height: '100%' },
   vsShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
@@ -276,9 +293,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#22C55E',
@@ -287,28 +304,34 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    marginLeft: -26,
-    marginTop: -26,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 3,
+    marginLeft: -30,
+    marginTop: -30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10,
   },
-  vsBadgeText: { fontSize: 16, fontWeight: '900' },
+  vsBadgeText: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 1 },
   // result
-  resultHead: { fontSize: 26, fontWeight: '800' },
+  resultHead: { fontSize: 26, fontWeight: '900' },
   resultSub: { fontSize: 14, marginTop: 2, marginBottom: 18 },
   rankRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 10,
-    borderRadius: 14,
+    borderRadius: 16,
     marginBottom: 10,
   },
-  rankNum: { width: 24, textAlign: 'center', fontSize: 18, fontWeight: '800' },
+  medal: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  rankNum: { width: 30, textAlign: 'center', fontSize: 18, fontWeight: '800' },
   rankCover: { width: 46, height: 62, borderRadius: 8, backgroundColor: '#000' },
   rankBody: { flex: 1 },
   rankName: { fontSize: 15, fontWeight: '700' },
@@ -318,7 +341,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 52,
+    height: 54,
     borderRadius: 16,
     marginTop: 16,
   },

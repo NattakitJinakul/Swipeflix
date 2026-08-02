@@ -1,6 +1,6 @@
 /**
- * Settings stack. Index + grouped sub-pages. Native header, back-enabled.
- * See docs/10-profile-settings.md.
+ * Community stack. Index (player list) + [uid] (a player's public profile).
+ * Native themed header; pushed from the root stack, so the index gets an explicit back control.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
@@ -10,7 +10,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useT } from '@/src/i18n';
 
-export default function SettingsLayout() {
+export default function CommunityLayout() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const t = useT();
@@ -27,9 +27,7 @@ export default function SettingsLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: t('settings.title'),
-          // Settings is pushed from the root stack (its header is hidden), so the nested
-          // stack's root screen needs an explicit back control to return to Profile.
+          title: t('community.title'),
           headerLeft: () => (
             <Pressable onPress={() => router.back()} hitSlop={10} style={{ paddingHorizontal: 4 }}>
               <Ionicons name="chevron-back" size={26} color={c.primary} />
@@ -37,9 +35,7 @@ export default function SettingsLayout() {
           ),
         }}
       />
-      <Stack.Screen name="account" options={{ title: t('settings.account') }} />
-      <Stack.Screen name="preferences" options={{ title: t('settings.preferences') }} />
-      <Stack.Screen name="about" options={{ title: t('settings.about') }} />
+      <Stack.Screen name="[uid]" options={{ title: t('community.title') }} />
     </Stack>
   );
 }

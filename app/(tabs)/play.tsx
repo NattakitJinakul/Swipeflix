@@ -1,8 +1,6 @@
 /**
- * "สนุก" hub — landing for the mini-games. Two big gradient cards:
- *   • เกมอะไรเอ่ย?  (guess the game from a screenshot)   -> /play/guess
- *   • VS ตัวต่อตัว   (pick your favourite, head-to-head)  -> /play/vs
- * Guest-friendly, themed via Colors + useColorScheme.
+ * "สนุก" hub — landing for the mini-games. A bold gradient hero + two big illustrated
+ * game cards (gradient, large icon, description, Play affordance). Guest-friendly.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -13,13 +11,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 type Game = {
   key: string;
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subKey: string;
   icon: IoniconName;
   colors: [string, string];
   href: '/play/guess' | '/play/vs';
@@ -28,16 +27,16 @@ type Game = {
 const GAMES: Game[] = [
   {
     key: 'guess',
-    title: 'เกมอะไรเอ่ย?',
-    subtitle: 'ทายชื่อเกมจากภาพในเกม เก็บสตรีคให้ยาวที่สุด',
+    titleKey: 'play.guessTitle',
+    subKey: 'play.guessSub',
     icon: 'help-circle',
     colors: ['#E50914', '#FF5A67'],
     href: '/play/guess',
   },
   {
     key: 'vs',
-    title: 'VS ตัวต่อตัว',
-    subtitle: 'สองเกมประชันกัน เลือกอันที่ชอบกว่า แล้วดูอันดับ',
+    titleKey: 'play.vsTitle',
+    subKey: 'play.vsSub',
     icon: 'git-compare',
     colors: ['#6D28D9', '#3B82F6'],
     href: '/play/vs',
@@ -48,6 +47,7 @@ export default function PlayHub() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const open = (href: Game['href']) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -57,33 +57,45 @@ export default function PlayHub() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 36, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.title, { color: c.text }]}>สนุก</Text>
-        <Text style={[styles.sub, { color: c.muted }]}>เล่นเกมสั้น ๆ ระหว่างเลือกเกมถัดไป</Text>
+        {/* Hero */}
+        <LinearGradient
+          colors={[c.primary, '#FF5A67']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroIcon}>
+            <Ionicons name="game-controller" size={30} color="#fff" />
+          </View>
+          <Text style={styles.heroTitle}>{t('play.hubTitle')}</Text>
+          <Text style={styles.heroSub}>{t('play.hubSub')}</Text>
+        </LinearGradient>
 
+        {/* Game cards */}
         <View style={styles.cards}>
           {GAMES.map((g) => (
             <Pressable
               key={g.key}
               onPress={() => open(g.href)}
-              style={({ pressed }) => [styles.cardWrap, pressed && { transform: [{ scale: 0.98 }], opacity: 0.95 }]}
+              style={({ pressed }) => [styles.cardWrap, pressed && { transform: [{ scale: 0.98 }], opacity: 0.96 }]}
             >
-              <LinearGradient
-                colors={g.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.card}
-              >
+              <LinearGradient colors={g.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
+                {/* faint oversized backdrop icon */}
+                <Ionicons name={g.icon} size={150} color="rgba(255,255,255,0.12)" style={styles.cardGhost} />
                 <View style={styles.iconBadge}>
-                  <Ionicons name={g.icon} size={30} color="#fff" />
+                  <Ionicons name={g.icon} size={32} color="#fff" />
                 </View>
                 <View style={styles.cardBody}>
-                  <Text style={styles.cardTitle}>{g.title}</Text>
-                  <Text style={styles.cardSub}>{g.subtitle}</Text>
+                  <Text style={styles.cardTitle}>{t(g.titleKey)}</Text>
+                  <Text style={styles.cardSub}>{t(g.subKey)}</Text>
+                  <View style={styles.playPill}>
+                    <Ionicons name="play" size={13} color="#fff" />
+                    <Text style={styles.playPillText}>{t('play.playCta')}</Text>
+                  </View>
                 </View>
-                <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.9)" />
               </LinearGradient>
             </Pressable>
           ))}
@@ -95,14 +107,34 @@ export default function PlayHub() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  title: { fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
-  sub: { fontSize: 14, marginTop: 4, marginBottom: 22 },
+  hero: {
+    borderRadius: 24,
+    padding: 22,
+    gap: 6,
+    marginBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  heroIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 6,
+  },
+  heroTitle: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: -0.5 },
+  heroSub: { color: 'rgba(255,255,255,0.92)', fontSize: 14, lineHeight: 19 },
   cards: { gap: 16 },
   cardWrap: {
     borderRadius: 22,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.3,
     shadowRadius: 18,
     elevation: 10,
   },
@@ -110,20 +142,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    minHeight: 130,
+    minHeight: 150,
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingVertical: 20,
+    overflow: 'hidden',
   },
+  cardGhost: { position: 'absolute', right: -20, bottom: -30 },
   iconBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
+    width: 66,
+    height: 66,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  cardBody: { flex: 1 },
-  cardTitle: { color: '#fff', fontSize: 21, fontWeight: '800' },
-  cardSub: { color: 'rgba(255,255,255,0.9)', fontSize: 13, marginTop: 6, lineHeight: 18 },
+  cardBody: { flex: 1, gap: 6 },
+  cardTitle: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  cardSub: { color: 'rgba(255,255,255,0.92)', fontSize: 13, lineHeight: 18 },
+  playPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+  },
+  playPillText: { color: '#fff', fontSize: 13, fontWeight: '800', letterSpacing: 0.3 },
 });

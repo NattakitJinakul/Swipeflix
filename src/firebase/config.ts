@@ -8,6 +8,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as firebaseAuth from 'firebase/auth';
 import { getAuth, initializeAuth, type Auth, type Persistence } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 // getReactNativePersistence ships only in Firebase's react-native build; it is absent from the
 // default public type surface. Cast the namespace so this typechecks on any resolution while Metro
@@ -50,3 +51,4 @@ function makeAuth(): Auth {
 
 export const auth: Auth = makeAuth();
 export const db: Firestore = getFirestore(app);
+export const storage: FirebaseStorage = getStorage(app);

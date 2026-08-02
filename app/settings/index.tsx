@@ -1,7 +1,6 @@
 /**
- * Settings home — grouped list. Account / Subscription / Preferences / Content / Data / About.
- * Nav rows push sub-pages; quick toggles + actions handled inline (mock-safe).
- * See docs/10-profile-settings.md.
+ * Settings home — grouped list. Account / Preferences / Content / Data / About.
+ * Nav rows push sub-pages; quick toggles + actions handled inline. No subscription/payment.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -11,6 +10,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 're
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -18,14 +18,14 @@ export default function SettingsIndex() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const router = useRouter();
+  const t = useT();
 
-  // Local quick toggles — no store fields yet (see bus note). Persist TODO.
   const [notifyNew, setNotifyNew] = useState(false);
   const [hideAdult, setHideAdult] = useState(true);
 
   const clearImageCache = () => {
     Promise.allSettled([Image.clearMemoryCache(), Image.clearDiskCache()]).then(() =>
-      Alert.alert('ล้าง cache รูปแล้ว', 'พื้นที่รูปภาพถูกล้างเรียบร้อย'),
+      Alert.alert(t('settings.cacheClearedTitle'), t('settings.cacheClearedBody')),
     );
   };
 
@@ -34,29 +34,25 @@ export default function SettingsIndex() {
       style={{ backgroundColor: c.background }}
       contentContainerStyle={styles.content}
     >
-      <Group title="บัญชี" color={c.muted}>
-        <NavRow c={c} icon="person-circle-outline" label="โปรไฟล์ & บัญชี" onPress={() => router.push('/settings/account')} />
+      <Group title={t('settings.groupAccount')} color={c.muted}>
+        <NavRow c={c} icon="person-circle-outline" label={t('settings.rowProfileAccount')} onPress={() => router.push('/settings/account')} />
       </Group>
 
-      <Group title="สมาชิก" color={c.muted}>
-        <NavRow c={c} icon="star-outline" label="แผน & การชำระเงิน" onPress={() => router.push('/settings/subscription')} />
+      <Group title={t('settings.groupPreferences')} color={c.muted}>
+        <NavRow c={c} icon="options-outline" label={t('settings.rowPreferences')} onPress={() => router.push('/settings/preferences')} />
       </Group>
 
-      <Group title="ค่ากำหนด" color={c.muted}>
-        <NavRow c={c} icon="options-outline" label="ธีม · ภาษา · ภูมิภาค · แนวเกม" onPress={() => router.push('/settings/preferences')} />
+      <Group title={t('settings.groupContent')} color={c.muted}>
+        <ToggleRow c={c} icon="eye-off-outline" label={t('settings.hideAdult')} value={hideAdult} onChange={setHideAdult} />
+        <ToggleRow c={c} icon="notifications-outline" label={t('settings.notifyNew')} value={notifyNew} onChange={setNotifyNew} last />
       </Group>
 
-      <Group title="เนื้อหา" color={c.muted}>
-        <ToggleRow c={c} icon="eye-off-outline" label="ซ่อนเนื้อหาผู้ใหญ่" value={hideAdult} onChange={setHideAdult} />
-        <ToggleRow c={c} icon="notifications-outline" label="แจ้งเตือนเกมใหม่" value={notifyNew} onChange={setNotifyNew} last />
+      <Group title={t('settings.groupData')} color={c.muted}>
+        <ActionRow c={c} icon="image-outline" label={t('settings.clearCache')} onPress={clearImageCache} last />
       </Group>
 
-      <Group title="ข้อมูล" color={c.muted}>
-        <ActionRow c={c} icon="image-outline" label="ล้าง cache รูป" onPress={clearImageCache} last />
-      </Group>
-
-      <Group title="เกี่ยวกับ" color={c.muted}>
-        <NavRow c={c} icon="information-circle-outline" label="เกี่ยวกับ & เครดิต" onPress={() => router.push('/settings/about')} last />
+      <Group title={t('settings.groupAbout')} color={c.muted}>
+        <NavRow c={c} icon="information-circle-outline" label={t('settings.rowAbout')} onPress={() => router.push('/settings/about')} last />
       </Group>
     </ScrollView>
   );

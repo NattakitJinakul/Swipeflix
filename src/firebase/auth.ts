@@ -13,7 +13,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import type { Subscription, UserProfile } from '../types/user';
+import type { UserProfile } from '../types/user';
 import { auth, db } from './config';
 
 export function defaultProfile(user: User, displayName?: string): UserProfile {
@@ -29,12 +29,6 @@ export function defaultProfile(user: User, displayName?: string): UserProfile {
   };
 }
 
-const defaultSubscription: Subscription = {
-  plan: 'free',
-  renewsAt: null,
-  status: 'active',
-};
-
 /** Create users/{uid} doc if it does not exist yet. Returns true when a new doc was created. */
 export async function ensureUserDoc(user: User, displayName?: string): Promise<boolean> {
   const ref = doc(db, 'users', user.uid);
@@ -42,7 +36,6 @@ export async function ensureUserDoc(user: User, displayName?: string): Promise<b
   if (snap.exists()) return false;
   await setDoc(ref, {
     profile: defaultProfile(user, displayName),
-    subscription: defaultSubscription,
     createdAt: serverTimestamp(),
   });
   return true;

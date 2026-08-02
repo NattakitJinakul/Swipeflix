@@ -39,7 +39,7 @@ type SettingsState = {
 const DEFAULTS: SettingsState = {
   theme: 'system',
   region: 'TH',
-  language: 'th-TH',
+  language: 'en',
   favoriteGenres: [],
   autoplayTrailer: true,
   reduceMotion: false,

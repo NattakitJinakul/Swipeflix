@@ -16,21 +16,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GoogleAuthButton } from '@/components/GoogleAuthButton';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT, type TFunc } from '@/src/i18n';
 import { useAuth } from '@/src/store/auth';
 
-function errMsg(e: unknown): string {
+function errMsg(e: unknown, t: TFunc): string {
   const code = (e as { code?: string })?.code ?? '';
   if (code.includes('invalid-credential') || code.includes('wrong-password'))
-    return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
-  if (code.includes('user-not-found')) return 'ไม่พบบัญชีนี้';
-  if (code.includes('invalid-email')) return 'อีเมลไม่ถูกต้อง';
-  if (code.includes('network')) return 'เชื่อมต่อเครือข่ายไม่ได้';
-  return e instanceof Error ? e.message : 'เข้าสู่ระบบไม่สำเร็จ';
+    return t('auth.errInvalidCredential');
+  if (code.includes('user-not-found')) return t('auth.errUserNotFound');
+  if (code.includes('invalid-email')) return t('auth.errInvalidEmail');
+  if (code.includes('network')) return t('auth.errNetwork');
+  return e instanceof Error ? e.message : t('auth.errSignInFailed');
 }
 
 export default function LoginScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
+  const t = useT();
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -41,7 +43,7 @@ export default function LoginScreen() {
   const onSignIn = async () => {
     setError(null);
     if (!email || !password) {
-      setError('กรอกอีเมลและรหัสผ่าน');
+      setError(t('auth.errFillEmailPassword'));
       return;
     }
     setBusy(true);
@@ -49,7 +51,7 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
       // Root gate handles navigation on success.
     } catch (e) {
-      setError(errMsg(e));
+      setError(errMsg(e, t));
     } finally {
       setBusy(false);
     }
@@ -64,15 +66,15 @@ export default function LoginScreen() {
         <Pressable style={styles.container} onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.brand}>
             <Text style={[styles.logo, { color: c.primary }]}>SWIPEPLAY</Text>
-            <Text style={[styles.tagline, { color: c.muted }]}>วันนี้เล่นอะไรดี</Text>
+            <Text style={[styles.tagline, { color: c.muted }]}>{t('auth.tagline')}</Text>
           </View>
 
           <View style={styles.form}>
-            <Text style={[styles.title, { color: c.text }]}>เข้าสู่ระบบ</Text>
+            <Text style={[styles.title, { color: c.text }]}>{t('auth.signInTitle')}</Text>
 
             <TextInput
               style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-              placeholder="อีเมล"
+              placeholder={t('auth.email')}
               placeholderTextColor={c.muted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -81,7 +83,7 @@ export default function LoginScreen() {
             />
             <TextInput
               style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-              placeholder="รหัสผ่าน"
+              placeholder={t('auth.password')}
               placeholderTextColor={c.muted}
               secureTextEntry
               value={password}
@@ -101,18 +103,18 @@ export default function LoginScreen() {
               {busy ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.primaryBtnText}>เข้าสู่ระบบ</Text>
+                <Text style={styles.primaryBtnText}>{t('auth.signInTitle')}</Text>
               )}
             </Pressable>
 
             <View style={styles.dividerRow}>
               <View style={[styles.line, { backgroundColor: c.muted }]} />
-              <Text style={[styles.or, { color: c.muted }]}>หรือ</Text>
+              <Text style={[styles.or, { color: c.muted }]}>{t('common.or')}</Text>
               <View style={[styles.line, { backgroundColor: c.muted }]} />
             </View>
 
             <GoogleAuthButton
-              label="เข้าสู่ระบบด้วย Google"
+              label={t('auth.googleSignIn')}
               disabled={busy}
               onBusy={setBusy}
               onError={(m) => setError(m || null)}
@@ -120,9 +122,9 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={{ color: c.muted }}>ยังไม่มีบัญชี? </Text>
+            <Text style={{ color: c.muted }}>{t('auth.noAccount')}</Text>
             <Link href="/(auth)/signup" style={[styles.link, { color: c.primary }]}>
-              สมัครสมาชิก
+              {t('auth.signUpLink')}
             </Link>
           </View>
         </Pressable>

@@ -5,18 +5,20 @@
 import { Tabs } from 'expo-router';
 
 import { AnimatedTabBar } from '@/components/AnimatedTabBar';
+import { useT } from '@/src/i18n';
 
 export default function TabLayout() {
+  const t = useT();
   return (
     <Tabs
       screenOptions={{ headerShown: false }}
       tabBar={(props) => <AnimatedTabBar {...props} />}
     >
-      <Tabs.Screen name="index" options={{ title: 'ปัด' }} />
-      <Tabs.Screen name="discover" options={{ title: 'ค้นหา' }} />
-      <Tabs.Screen name="play" options={{ title: 'สนุก' }} />
-      <Tabs.Screen name="watchlist" options={{ title: 'รายการ' }} />
-      <Tabs.Screen name="profile" options={{ title: 'โปรไฟล์' }} />
+      <Tabs.Screen name="index" options={{ title: t('tabs.swipe') }} />
+      <Tabs.Screen name="discover" options={{ title: t('tabs.discover') }} />
+      <Tabs.Screen name="play" options={{ title: t('tabs.play') }} />
+      <Tabs.Screen name="watchlist" options={{ title: t('tabs.watchlist') }} />
+      <Tabs.Screen name="profile" options={{ title: t('tabs.profile') }} />
     </Tabs>
   );
 }

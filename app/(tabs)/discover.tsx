@@ -12,21 +12,23 @@ import { EmptyState } from '@/components/EmptyState';
 import { PosterGrid } from '@/components/PosterGrid';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 import { popularGames, topRatedGames } from '@/src/api/endpoints';
 import { useSearch } from '@/src/hooks/useSearch';
 import type { GameLite } from '@/src/types/game';
 
 type Feed = 'popular' | 'top_rated';
 
-const FEEDS: { key: Feed; label: string }[] = [
-  { key: 'popular', label: '🔥 ยอดนิยม' },
-  { key: 'top_rated', label: '✨ แนะนำ' },
+const FEEDS: { key: Feed; labelKey: string }[] = [
+  { key: 'popular', labelKey: 'discover.feedPopular' },
+  { key: 'top_rated', labelKey: 'discover.feedTopRated' },
 ];
 
 export default function DiscoverScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const { query, setQuery, results, loading } = useSearch();
   const [feed, setFeed] = useState<Feed>('popular');
@@ -58,7 +60,7 @@ export default function DiscoverScreen() {
         <Ionicons name="search" size={18} color={c.muted} />
         <TextInput
           style={[styles.input, { color: c.text }]}
-          placeholder="ค้นหาเกม..."
+          placeholder={t('discover.searchPlaceholder')}
           placeholderTextColor={c.muted}
           value={query}
           onChangeText={setQuery}
@@ -82,7 +84,7 @@ export default function DiscoverScreen() {
               style={[styles.feedChip, { backgroundColor: feed === f.key ? c.primary : c.surface }]}
             >
               <Text style={[styles.feedText, { color: feed === f.key ? '#fff' : c.muted }]}>
-                {f.label}
+                {t(f.labelKey)}
               </Text>
             </Pressable>
           ))}
@@ -102,11 +104,15 @@ export default function DiscoverScreen() {
             searching ? (
               <EmptyState
                 icon="search-outline"
-                title="ไม่พบผลลัพธ์"
-                subtitle={`ไม่เจอเกมที่ตรงกับ "${query}"`}
+                title={t('discover.noResultsTitle')}
+                subtitle={t('discover.noResultsSub', { query })}
               />
             ) : (
-              <EmptyState icon="flame-outline" title="โหลดเกมไม่สำเร็จ" subtitle="ลองใหม่อีกครั้ง" />
+              <EmptyState
+                icon="flame-outline"
+                title={t('discover.loadFailTitle')}
+                subtitle={t('discover.loadFailSub')}
+              />
             )
           }
         />

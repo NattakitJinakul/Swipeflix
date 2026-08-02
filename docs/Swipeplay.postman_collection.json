@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "Swipeplay — IGDB API",
+    "description": "All API requests used by the Swipeplay app. Set collection variables CLIENT_ID, CLIENT_SECRET, then run '0. Get Twitch Token' (it auto-saves ACCESS_TOKEN). IGDB is POST-only with apicalypse text bodies + headers Client-ID and Authorization: Bearer <token>.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "CLIENT_ID", "value": "" },
+    { "key": "CLIENT_SECRET", "value": "" },
+    { "key": "ACCESS_TOKEN", "value": "" },
+    { "key": "IGDB", "value": "https://api.igdb.com/v4" }
+  ],
+  "item": [
+    {
+      "name": "0. Get Twitch Token (run first)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var j = pm.response.json();",
+              "if (j.access_token) { pm.collectionVariables.set('ACCESS_TOKEN', j.access_token); console.log('ACCESS_TOKEN saved'); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "https://id.twitch.tv/oauth2/token?client_id={{CLIENT_ID}}&client_secret={{CLIENT_SECRET}}&grant_type=client_credentials",
+          "protocol": "https",
+          "host": ["id", "twitch", "tv"],
+          "path": ["oauth2", "token"],
+          "query": [
+            { "key": "client_id", "value": "{{CLIENT_ID}}" },
+            { "key": "client_secret", "value": "{{CLIENT_SECRET}}" },
+            { "key": "grant_type", "value": "client_credentials" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "1. Popular games",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields name, cover.url, rating, rating_count, first_release_date, genres.name, platforms.name; where cover != null & rating_count > 10; sort rating_count desc; limit 20;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "2. Top rated games",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields name, cover.url, rating, rating_count, first_release_date, genres.name, platforms.name; where cover != null & rating_count > 30; sort rating desc; limit 20;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "3. New games",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields name, cover.url, rating, first_release_date, genres.name, platforms.name; where cover != null & first_release_date != null & first_release_date < 1893456000; sort first_release_date desc; limit 20;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "4. Search games",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "search \"zelda\"; fields name, cover.url, rating, first_release_date, genres.name, platforms.name; where cover != null; limit 20;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "5. Game detail (by id)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields name, summary, storyline, cover.url, rating, rating_count, first_release_date, genres.name, platforms.name, involved_companies.company.name, involved_companies.developer, involved_companies.publisher, screenshots.url, videos.video_id, similar_games.name, similar_games.cover.url, similar_games.rating, websites.url, websites.type; where id = 1020;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "6. Guess game (screenshots)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields name, screenshots.url; where screenshots != null & rating_count > 80 & cover != null; sort rating_count desc; limit 40;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "7. Versus games",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields name, cover.url, rating, rating_count, genres.name, platforms.name, first_release_date; where cover != null & rating_count > 60; sort rating_count desc; limit 40;" },
+        "url": { "raw": "{{IGDB}}/games", "host": ["{{IGDB}}"], "path": ["games"] }
+      }
+    },
+    {
+      "name": "8. Genres",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Client-ID", "value": "{{CLIENT_ID}}" },
+          { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+        ],
+        "body": { "mode": "raw", "raw": "fields id, name; limit 50; sort name asc;" },
+        "url": { "raw": "{{IGDB}}/genres", "host": ["{{IGDB}}"], "path": ["genres"] }
+      }
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import Animated, {
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 import type { GameLite } from '@/src/types/game';
 import { gameImage } from './game-image';
 
@@ -41,6 +42,7 @@ export function SwipeCard({
 }: SwipeCardProps) {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
+  const t = useT();
 
   // Fallback shared values so hooks stay unconditional when the card is static (back of stack).
   const fallbackX = useSharedValue(0);
@@ -129,19 +131,19 @@ export function SwipeCard({
       <Animated.View style={[styles.overlay, styles.overlayLeft, likeStyle]} pointerEvents="none">
         <View style={[styles.badge, { backgroundColor: c.like, shadowColor: c.like }]}>
           <Ionicons name="heart" size={26} color="#fff" />
-          <Text style={styles.badgeText}>ชอบ</Text>
+          <Text style={styles.badgeText}>{t('swipe.likeLabel')}</Text>
         </View>
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayRight, nopeStyle]} pointerEvents="none">
         <View style={[styles.badge, { backgroundColor: c.dislike, shadowColor: c.dislike }]}>
           <Ionicons name="thumbs-down" size={26} color="#fff" />
-          <Text style={styles.badgeText}>ไม่ชอบ</Text>
+          <Text style={styles.badgeText}>{t('swipe.nopeLabel')}</Text>
         </View>
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayTop, seenStyle]} pointerEvents="none">
         <View style={[styles.badge, { backgroundColor: c.watched, shadowColor: c.watched }]}>
           <Ionicons name="game-controller" size={26} color="#fff" />
-          <Text style={styles.badgeText}>เคยเล่น</Text>
+          <Text style={styles.badgeText}>{t('swipe.playedLabel')}</Text>
         </View>
       </Animated.View>
     </View>

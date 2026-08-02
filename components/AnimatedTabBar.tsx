@@ -15,21 +15,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: Record<string, { outline: IoniconName; filled: IoniconName; label: string }> = {
-  index: { outline: 'flame-outline', filled: 'flame', label: 'ปัด' },
-  discover: { outline: 'search-outline', filled: 'search', label: 'ค้นหา' },
-  play: { outline: 'game-controller-outline', filled: 'game-controller', label: 'สนุก' },
-  watchlist: { outline: 'bookmark-outline', filled: 'bookmark', label: 'รายการ' },
-  profile: { outline: 'person-outline', filled: 'person', label: 'โปรไฟล์' },
+const TABS: Record<string, { outline: IoniconName; filled: IoniconName; labelKey: string }> = {
+  index: { outline: 'flame-outline', filled: 'flame', labelKey: 'tabs.swipe' },
+  discover: { outline: 'search-outline', filled: 'search', labelKey: 'tabs.discover' },
+  play: { outline: 'game-controller-outline', filled: 'game-controller', labelKey: 'tabs.play' },
+  watchlist: { outline: 'bookmark-outline', filled: 'bookmark', labelKey: 'tabs.watchlist' },
+  profile: { outline: 'person-outline', filled: 'person', labelKey: 'tabs.profile' },
 };
 
 export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const t = useT();
   const [barW, setBarW] = useState(0);
 
   const count = state.routes.length;
@@ -70,7 +72,7 @@ export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
             if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
           };
           return (
-            <TabItem key={route.key} focused={focused} cfg={cfg} muted={c.muted} onPress={onPress} />
+            <TabItem key={route.key} focused={focused} cfg={cfg} label={t(cfg.labelKey)} muted={c.muted} onPress={onPress} />
           );
         })}
       </View>
@@ -81,11 +83,13 @@ export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
 function TabItem({
   focused,
   cfg,
+  label,
   muted,
   onPress,
 }: {
   focused: boolean;
-  cfg: { outline: IoniconName; filled: IoniconName; label: string };
+  cfg: { outline: IoniconName; filled: IoniconName; labelKey: string };
+  label: string;
   muted: string;
   onPress: () => void;
 }) {
@@ -93,7 +97,7 @@ function TabItem({
     transform: [{ scale: withSpring(focused ? 1.18 : 1, { damping: 13, stiffness: 180 }) }],
   }));
   return (
-    <Pressable style={styles.item} onPress={onPress} hitSlop={8} accessibilityLabel={cfg.label}>
+    <Pressable style={styles.item} onPress={onPress} hitSlop={8} accessibilityLabel={label}>
       <Animated.View style={iconStyle}>
         <Ionicons name={focused ? cfg.filled : cfg.outline} size={24} color={focused ? '#fff' : muted} />
       </Animated.View>

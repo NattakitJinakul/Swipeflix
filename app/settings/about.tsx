@@ -1,5 +1,5 @@
 /**
- * About — app version, REQUIRED IGDB attribution, Privacy/Terms links (mock).
+ * About — app version, REQUIRED IGDB attribution, Privacy/Terms links.
  * IGDB credit line is mandatory (game data provided by IGDB.com, powered by Twitch).
  */
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 
 type Colorset = (typeof Colors)['dark'];
 
@@ -17,6 +18,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 export default function AboutScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
+  const t = useT();
 
   const open = (url: string) => {
     void WebBrowser.openBrowserAsync(url).catch(() => {});
@@ -29,18 +31,14 @@ export default function AboutScreen() {
           <Ionicons name="game-controller" size={34} color="#fff" />
         </View>
         <Text style={[styles.appName, { color: c.text }]}>Swipeplay</Text>
-        <Text style={[styles.version, { color: c.muted }]}>เวอร์ชัน {APP_VERSION}</Text>
+        <Text style={[styles.version, { color: c.muted }]}>{t('about.version', { v: APP_VERSION })}</Text>
       </View>
 
       {/* IGDB attribution — REQUIRED */}
       <View style={[styles.igdbCard, { backgroundColor: c.surface }]}>
         <Text style={[styles.igdbLogo, { color: '#9147FF' }]}>IGDB</Text>
-        <Text style={[styles.igdbText, { color: c.text }]}>
-          This product uses the IGDB API. Game data is provided by IGDB.com (powered by Twitch).
-        </Text>
-        <Text style={[styles.igdbNote, { color: c.muted }]}>
-          ข้อมูลเกม รูปปก และเรตติ้งทั้งหมดจาก IGDB.com
-        </Text>
+        <Text style={[styles.igdbText, { color: c.text }]}>{t('about.attribution')}</Text>
+        <Text style={[styles.igdbNote, { color: c.muted }]}>{t('about.attributionNote')}</Text>
         <Pressable
           onPress={() => open('https://www.igdb.com/')}
           style={({ pressed }) => [styles.igdbLink, { opacity: pressed ? 0.7 : 1 }]}
@@ -52,8 +50,8 @@ export default function AboutScreen() {
 
       {/* Legal links */}
       <View style={styles.list}>
-        <LinkRow c={c} icon="shield-checkmark-outline" label="นโยบายความเป็นส่วนตัว" onPress={() => open('https://example.com/privacy')} />
-        <LinkRow c={c} icon="document-text-outline" label="ข้อกำหนดการใช้งาน" onPress={() => open('https://example.com/terms')} last />
+        <LinkRow c={c} icon="shield-checkmark-outline" label={t('about.privacy')} onPress={() => open('https://example.com/privacy')} />
+        <LinkRow c={c} icon="document-text-outline" label={t('about.terms')} onPress={() => open('https://example.com/terms')} last />
       </View>
 
       <Text style={[styles.copyright, { color: c.muted }]}>© 2026 Swipeplay</Text>

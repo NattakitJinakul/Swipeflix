@@ -16,21 +16,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GoogleAuthButton } from '@/components/GoogleAuthButton';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT, type TFunc } from '@/src/i18n';
 import { useAuth } from '@/src/store/auth';
 
-function errMsg(e: unknown): string {
+function errMsg(e: unknown, t: TFunc): string {
   const code = (e as { code?: string })?.code ?? '';
-  if (code.includes('email-already-in-use')) return 'อีเมลนี้ถูกใช้แล้ว';
-  if (code.includes('weak-password')) return 'รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัว)';
-  if (code.includes('invalid-email')) return 'อีเมลไม่ถูกต้อง';
-  if (code.includes('network')) return 'เชื่อมต่อเครือข่ายไม่ได้';
-  return e instanceof Error ? e.message : 'สมัครสมาชิกไม่สำเร็จ';
+  if (code.includes('email-already-in-use')) return t('auth.errEmailInUse');
+  if (code.includes('weak-password')) return t('auth.errWeakPassword');
+  if (code.includes('invalid-email')) return t('auth.errInvalidEmail');
+  if (code.includes('network')) return t('auth.errNetwork');
+  return e instanceof Error ? e.message : t('auth.errSignUpFailed');
 }
 
 export default function SignupScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const router = useRouter();
+  const t = useT();
   const { signUp } = useAuth();
 
   const [displayName, setDisplayName] = useState('');
@@ -42,15 +44,15 @@ export default function SignupScreen() {
   const onSignUp = async () => {
     setError(null);
     if (!displayName || !email || !password) {
-      setError('กรอกข้อมูลให้ครบ');
+      setError(t('auth.errFillAll'));
       return;
     }
     setBusy(true);
     try {
       await signUp(email.trim(), password, displayName.trim());
-      router.replace('/(auth)/pricing');
+      router.replace('/(auth)/onboarding');
     } catch (e) {
-      setError(errMsg(e));
+      setError(errMsg(e, t));
     } finally {
       setBusy(false);
     }
@@ -69,22 +71,22 @@ export default function SignupScreen() {
         >
           <View style={styles.brand}>
             <Text style={[styles.logo, { color: c.primary }]}>SWIPEPLAY</Text>
-            <Text style={[styles.tagline, { color: c.muted }]}>สร้างบัญชีเพื่อเริ่มปัด</Text>
+            <Text style={[styles.tagline, { color: c.muted }]}>{t('auth.signUpTagline')}</Text>
           </View>
 
           <View style={styles.form}>
-            <Text style={[styles.title, { color: c.text }]}>สมัครสมาชิก</Text>
+            <Text style={[styles.title, { color: c.text }]}>{t('auth.signUpTitle')}</Text>
 
             <TextInput
               style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-              placeholder="ชื่อที่แสดง"
+              placeholder={t('auth.displayName')}
               placeholderTextColor={c.muted}
               value={displayName}
               onChangeText={setDisplayName}
             />
             <TextInput
               style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-              placeholder="อีเมล"
+              placeholder={t('auth.email')}
               placeholderTextColor={c.muted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -93,7 +95,7 @@ export default function SignupScreen() {
             />
             <TextInput
               style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-              placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)"
+              placeholder={t('auth.passwordHint')}
               placeholderTextColor={c.muted}
               secureTextEntry
               value={password}
@@ -113,18 +115,18 @@ export default function SignupScreen() {
               {busy ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.primaryBtnText}>สมัครสมาชิก</Text>
+                <Text style={styles.primaryBtnText}>{t('auth.signUpTitle')}</Text>
               )}
             </Pressable>
 
             <View style={styles.dividerRow}>
               <View style={[styles.line, { backgroundColor: c.muted }]} />
-              <Text style={[styles.or, { color: c.muted }]}>หรือ</Text>
+              <Text style={[styles.or, { color: c.muted }]}>{t('common.or')}</Text>
               <View style={[styles.line, { backgroundColor: c.muted }]} />
             </View>
 
             <GoogleAuthButton
-              label="สมัครด้วย Google"
+              label={t('auth.googleSignUp')}
               disabled={busy}
               onBusy={setBusy}
               onError={(m) => setError(m || null)}
@@ -132,9 +134,9 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.footer}>
-            <Text style={{ color: c.muted }}>มีบัญชีอยู่แล้ว? </Text>
+            <Text style={{ color: c.muted }}>{t('auth.haveAccount')}</Text>
             <Link href="/(auth)/login" style={[styles.link, { color: c.primary }]}>
-              เข้าสู่ระบบ
+              {t('auth.signInLink')}
             </Link>
           </View>
         </ScrollView>

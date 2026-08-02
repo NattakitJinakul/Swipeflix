@@ -27,6 +27,7 @@ import { gameImage } from '@/components/game-image';
 import { GenreChip } from '@/components/GenreChip';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 import { popularGames } from '@/src/api/endpoints';
 import { useDeck, type DeckSource } from '@/src/hooks/useDeck';
 import { useAuth } from '@/src/store/auth';
@@ -39,11 +40,11 @@ const MATCH_RATING = 85;
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-const SOURCES: { key: DeckSource; label: string }[] = [
-  { key: 'popular', label: 'ยอดนิยม' },
-  { key: 'new', label: 'ใหม่' },
-  { key: 'top_rated', label: 'คะแนนสูง' },
-  { key: 'for_you', label: 'ตามที่ชอบ' },
+const SOURCES: { key: DeckSource; labelKey: string }[] = [
+  { key: 'popular', labelKey: 'swipe.sourcePopular' },
+  { key: 'new', labelKey: 'swipe.sourceNew' },
+  { key: 'top_rated', labelKey: 'swipe.sourceTopRated' },
+  { key: 'for_you', labelKey: 'swipe.sourceForYou' },
 ];
 
 // Genre chip set for the filter bar (onboarding/preferences expose all CATEGORIES).
@@ -53,20 +54,16 @@ export default function SwipeScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
+  const t = useT();
 
   const deck = useDeck();
-  const { plan, isGuest } = useAuth();
+  const { isGuest } = useAuth();
   const { like, dislike, markPlayed, undo, canUndo, lastActionOrigin } = useLibrary();
-
-  // Swipe quota applies ONLY to signed-in users; guests browse freely (unlimited).
-  const swipeLimit = getSwipeLimit(plan);
-  const [swipeCount, setSwipeCount] = useState(0);
-  const allowed = isGuest || swipeLimit == null || swipeCount < swipeLimit;
 
   const [showFilters, setShowFilters] = useState(false);
   const [burst, setBurst] = useState(0);
 
-  // เกมแห่งวัน — deterministic pick from the popular list, stable for the calendar day.
+  // Daily featured game — deterministic pick from the popular list, stable for the calendar day.
   const [daily, setDaily] = useState<GameLite | null>(null);
   useEffect(() => {
     let active = true;
@@ -102,17 +99,15 @@ export default function SwipeScreen() {
     [matchAnim],
   );
 
-  const bump = useCallback(() => setSwipeCount((n) => n + 1), []);
-
   // Guest save prompt — like/played require login. Returns true when the action must be blocked.
   const promptLogin = useCallback((): boolean => {
     if (!isGuest) return false;
-    Alert.alert('เข้าสู่ระบบ', 'บันทึกเกมที่ชอบต้องเข้าสู่ระบบก่อน', [
-      { text: 'ยกเลิก', style: 'cancel' },
-      { text: 'เข้าสู่ระบบ', onPress: () => router.push('/(auth)/login') },
+    Alert.alert(t('guest.title'), t('guest.body'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.signIn'), onPress: () => router.push('/(auth)/login') },
     ]);
     return true;
-  }, [isGuest]);
+  }, [isGuest, t]);
 
   const handleLike = useCallback(
     (game: GameLite) => {
@@ -121,22 +116,20 @@ export default function SwipeScreen() {
         return;
       }
       like(game, 'deck');
-      bump();
       // High-rated like -> full-screen MATCH celebration; otherwise the small confetti burst.
       if (game.rating != null && game.rating >= MATCH_RATING) celebrate(game);
       else setBurst((b) => b + 1);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       deck.advance();
     },
-    [promptLogin, like, bump, celebrate, deck],
+    [promptLogin, like, celebrate, deck],
   );
   const handleDislike = useCallback(
     (id: number) => {
       dislike(id, 'deck');
-      bump();
       deck.advance();
     },
-    [dislike, bump, deck],
+    [dislike, deck],
   );
   const handlePlayed = useCallback(
     (game: GameLite) => {
@@ -145,10 +138,9 @@ export default function SwipeScreen() {
         return;
       }
       markPlayed(game, 'deck');
-      bump();
       deck.advance();
     },
-    [promptLogin, markPlayed, bump, deck],
+    [promptLogin, markPlayed, deck],
   );
 
   const canUndoDeck = canUndo && lastActionOrigin === 'deck';
@@ -157,7 +149,6 @@ export default function SwipeScreen() {
     if (!canUndoDeck) return;
     undo();
     deck.rewind();
-    setSwipeCount((n) => Math.max(0, n - 1));
   }, [canUndoDeck, undo, deck]);
 
   const surpriseMe = useCallback(() => {
@@ -197,7 +188,7 @@ export default function SwipeScreen() {
         </View>
       </View>
 
-      {/* เกมแห่งวัน — daily featured banner (tap -> detail) */}
+      {/* Daily featured game banner (tap -> detail) */}
       {daily ? (
         <Pressable
           onPress={() => router.push(`/game/${daily.id}`)}
@@ -214,7 +205,7 @@ export default function SwipeScreen() {
             </View>
           )}
           <View style={styles.dailyInfo}>
-            <Text style={[styles.dailyLabel, { color: c.primary }]}>⭐ เกมแห่งวัน</Text>
+            <Text style={[styles.dailyLabel, { color: c.primary }]}>{t('swipe.dailyLabel')}</Text>
             <Text style={[styles.dailyName, { color: c.text }]} numberOfLines={1}>
               {daily.name}
             </Text>
@@ -246,7 +237,7 @@ export default function SwipeScreen() {
             ]}
           >
             <Text style={[styles.sourceText, { color: deck.source === s.key ? '#fff' : c.muted }]}>
-              {s.label}
+              {t(s.labelKey)}
             </Text>
           </Pressable>
         ))}
@@ -275,28 +266,20 @@ export default function SwipeScreen() {
 
       {/* Deck area */}
       <View style={styles.deckArea}>
-        {!allowed ? (
-          <EmptyState
-            icon="lock-closed-outline"
-            title="ปัดครบโควตาวันนี้แล้ว"
-            subtitle={`ปัดได้ ${swipeLimit == null ? 'ไม่จำกัด' : `${swipeLimit} เกม/วัน`} — อัปเกรดเพื่อปัดไม่จำกัด`}
-            actionLabel="ดูแผน Plus"
-            onAction={() => router.push('/(auth)/pricing')}
-          />
-        ) : deck.error ? (
+        {deck.error ? (
           <EmptyState
             icon="cloud-offline-outline"
-            title="โหลดไม่สำเร็จ"
-            subtitle="ตรวจการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่"
-            actionLabel="ลองใหม่"
+            title={t('swipe.errorTitle')}
+            subtitle={t('swipe.errorSub')}
+            actionLabel={t('common.retry')}
             onAction={deck.retry}
           />
         ) : deckEmpty ? (
           <EmptyState
             icon="albums-outline"
-            title="ดูครบแล้ว!"
-            subtitle="ลองเปลี่ยน filter หรือแหล่ง deck เพื่อเจอเกมใหม่ ๆ"
-            actionLabel="โหลดใหม่"
+            title={t('swipe.emptyTitle')}
+            subtitle={t('swipe.emptySub')}
+            actionLabel={t('swipe.reload')}
             onAction={deck.reload}
           />
         ) : (
@@ -313,7 +296,7 @@ export default function SwipeScreen() {
       </View>
 
       {/* Action buttons (below card) */}
-      {allowed && !deck.error && !deckEmpty ? (
+      {!deck.error && !deckEmpty ? (
         <View style={styles.actions}>
           <ActionButton
             icon="thumbs-down"
@@ -369,11 +352,6 @@ export default function SwipeScreen() {
       ) : null}
     </View>
   );
-}
-
-// Free tier = 40 swipes/session; paid tiers unlimited (null).
-function getSwipeLimit(plan: string): number | null {
-  return plan === 'free' ? 40 : null;
 }
 
 function IconButton({

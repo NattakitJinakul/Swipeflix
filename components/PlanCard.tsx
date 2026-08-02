@@ -8,6 +8,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 
 export type PlanCardData = {
   id: string;
@@ -26,6 +27,7 @@ export type PlanCardProps = {
 export function PlanCard({ plan, selected, onSelect }: PlanCardProps) {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
+  const t = useT();
   const border = selected ? c.primary : 'transparent';
 
   return (
@@ -38,7 +40,7 @@ export function PlanCard({ plan, selected, onSelect }: PlanCardProps) {
     >
       {plan.recommended ? (
         <View style={[styles.badge, { backgroundColor: c.primary }]}>
-          <Text style={styles.badgeText}>แนะนำ</Text>
+          <Text style={styles.badgeText}>{t('pricing.recommended')}</Text>
         </View>
       ) : null}
 

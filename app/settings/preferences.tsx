@@ -1,42 +1,23 @@
 /**
- * Preferences — theme / language / region / favorite genres + accessibility & content toggles.
- * Wired to useSettings where the store has a field; extras kept in local state (TODO: persist).
- * See docs/10-profile-settings.md + docs/11-enhancements.md (Settings — เสริม).
+ * Preferences — theme / language / region / favorite genres. All wired to the settings store
+ * (real, persisted). The language toggle sets 'en' | 'th', which drives app-wide i18n.
  */
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GenreChip } from '@/components/GenreChip';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useSettings } from '@/src/store';
+import { useT } from '@/src/i18n';
+import { useSettings } from '@/src/store/settings';
 import type { ThemePref } from '@/src/types/user';
 import { CATEGORIES, categoryLabel } from '@/src/utils/genres';
 
 type Colorset = (typeof Colors)['dark'];
 
-const THEME_OPTS: { value: ThemePref; label: string }[] = [
-  { value: 'dark', label: 'มืด' },
-  { value: 'light', label: 'สว่าง' },
-  { value: 'system', label: 'ระบบ' },
-];
-const LANG_OPTS = [
-  { value: 'th-TH', label: 'ไทย' },
-  { value: 'en-US', label: 'English' },
-];
-const REGION_OPTS = [
-  { value: 'TH', label: 'ไทย' },
-  { value: 'US', label: 'สหรัฐฯ' },
-];
-const SENSITIVITY_OPTS = [
-  { value: 'low', label: 'ต่ำ' },
-  { value: 'medium', label: 'กลาง' },
-  { value: 'high', label: 'สูง' },
-];
-
 export default function PreferencesScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
+  const t = useT();
 
   const {
     theme,
@@ -49,11 +30,19 @@ export default function PreferencesScreen() {
     setFavoriteGenres,
   } = useSettings();
 
-  // Extras not yet in the settings store — local only (TODO: add store fields + persist).
-  const [autoplay, setAutoplay] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const [sensitivity, setSensitivity] = useState('medium');
-  const [hideAdult, setHideAdult] = useState(true);
+  const themeOpts: { value: ThemePref; label: string }[] = [
+    { value: 'dark', label: t('prefs.themeDark') },
+    { value: 'light', label: t('prefs.themeLight') },
+    { value: 'system', label: t('prefs.themeSystem') },
+  ];
+  const langOpts = [
+    { value: 'th', label: t('onboarding.langThai') },
+    { value: 'en', label: t('onboarding.langEnglish') },
+  ];
+  const regionOpts = [
+    { value: 'TH', label: t('prefs.regionTH') },
+    { value: 'US', label: t('prefs.regionUS') },
+  ];
 
   const toggleGenre = (slug: string) => {
     setFavoriteGenres(
@@ -65,32 +54,21 @@ export default function PreferencesScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: c.background }} contentContainerStyle={styles.content}>
-      <Row label="ธีม" color={c.muted}>
-        <Segmented c={c} value={theme} options={THEME_OPTS} onChange={setTheme} />
+      <Row label={t('prefs.theme')} color={c.muted}>
+        <Segmented c={c} value={theme} options={themeOpts} onChange={setTheme} />
       </Row>
 
-      <Row label="ภาษา" color={c.muted}>
-        <Segmented c={c} value={language} options={LANG_OPTS} onChange={setLanguage} />
+      <Row label={t('prefs.language')} color={c.muted}>
+        <Segmented c={c} value={language} options={langOpts} onChange={setLanguage} />
       </Row>
 
-      <Row label="ภูมิภาค" color={c.muted}>
-        <Segmented c={c} value={region} options={REGION_OPTS} onChange={setRegion} />
+      <Row label={t('prefs.region')} color={c.muted}>
+        <Segmented c={c} value={region} options={regionOpts} onChange={setRegion} />
       </Row>
-
-      <Row label="ความไวการปัด" color={c.muted}>
-        <Segmented c={c} value={sensitivity} options={SENSITIVITY_OPTS} onChange={setSensitivity} />
-      </Row>
-
-      {/* Toggles */}
-      <View style={[styles.toggleBox]}>
-        <ToggleRow c={c} label="เล่นตัวอย่างอัตโนมัติ" value={autoplay} onChange={setAutoplay} />
-        <ToggleRow c={c} label="ลดการเคลื่อนไหว (ใช้ปุ่มแทนการปัด)" value={reduceMotion} onChange={setReduceMotion} />
-        <ToggleRow c={c} label="ซ่อนเนื้อหาผู้ใหญ่" value={hideAdult} onChange={setHideAdult} last />
-      </View>
 
       {/* Favorite genres */}
       <View style={styles.genreSection}>
-        <Text style={[styles.rowLabel, { color: c.muted }]}>แนวเกมที่ชอบ</Text>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>{t('prefs.genres')}</Text>
         <View style={styles.chips}>
           {CATEGORIES.map((slug) => (
             <GenreChip
@@ -148,33 +126,6 @@ function Segmented<T extends string>({
   );
 }
 
-function ToggleRow({
-  c,
-  label,
-  value,
-  onChange,
-  last,
-}: {
-  c: Colorset;
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-  last?: boolean;
-}) {
-  return (
-    <View
-      style={[
-        styles.toggleRow,
-        { backgroundColor: c.surface },
-        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.background },
-      ]}
-    >
-      <Text style={[styles.toggleLabel, { color: c.text }]}>{label}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: c.primary, false: c.muted }} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 18 },
   row: { gap: 8 },
@@ -189,16 +140,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     overflow: 'hidden',
   },
-  toggleBox: { borderRadius: 14, overflow: 'hidden' },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  toggleLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
   genreSection: { gap: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
 });

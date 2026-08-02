@@ -6,6 +6,7 @@ import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useT } from '@/src/i18n';
 import { useAuth } from '@/src/store/auth';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -40,21 +41,21 @@ export function GoogleAuthButton(props: Props) {
 
 function DisabledGoogleButton({ label }: { label: string }) {
   const c = Colors[useColorScheme() ?? 'dark'];
+  const t = useT();
   return (
     <>
       <Pressable disabled style={[styles.btn, { borderColor: c.muted, opacity: 0.5 }]}>
         <Ionicons name="logo-google" size={18} color={c.text} />
         <Text style={[styles.text, { color: c.text }]}>{label}</Text>
       </Pressable>
-      <Text style={[styles.hint, { color: c.muted }]}>
-        Google ใช้ได้บนเว็บหรือ dev build (ตั้งค่า client id ของแพลตฟอร์มนี้)
-      </Text>
+      <Text style={[styles.hint, { color: c.muted }]}>{t('auth.googleHint')}</Text>
     </>
   );
 }
 
 function EnabledGoogleButton({ label, disabled, onBusy, onError }: Props) {
   const c = Colors[useColorScheme() ?? 'dark'];
+  const t = useT();
   const { googleSignIn } = useAuth();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -71,9 +72,9 @@ function EnabledGoogleButton({ label, disabled, onBusy, onError }: Props) {
     onBusy?.(true);
     onError?.('');
     googleSignIn(idToken)
-      .catch((e) => onError?.(e instanceof Error ? e.message : 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ'))
+      .catch((e) => onError?.(e instanceof Error ? e.message : t('auth.googleFailed')))
       .finally(() => onBusy?.(false));
-  }, [response, googleSignIn, onBusy, onError]);
+  }, [response, googleSignIn, onBusy, onError, t]);
 
   const off = !request || disabled;
   return (

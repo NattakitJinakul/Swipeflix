@@ -16,7 +16,17 @@ export type UserProfile = {
   region: string; // e.g. 'TH'
   language: string; // e.g. 'th-TH'
   theme: ThemePref;
-  favoriteGenres: string[]; // FreeToGame category slugs
+  favoriteGenres: string[]; // IGDB genre names
+};
+
+/** Compact public summary written to users/{uid}.public for the Community feature. */
+export type PublicProfile = {
+  uid: string;
+  displayName: string;
+  avatar: string | null;
+  favoriteGenres: string[];
+  likedCount: number;
+  topGenres: { name: string; percent: number }[];
 };
 
 export type Subscription = {
