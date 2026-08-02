@@ -10,7 +10,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, {
   interpolate,
@@ -27,6 +27,7 @@ import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
 import { gameImage } from '@/components/game-image';
 import { GenreChip } from '@/components/GenreChip';
+import { SignInPrompt } from '@/components/SignInPrompt';
 import { SwipeTutorial, TUTORIAL_KEY } from '@/components/SwipeTutorial';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -66,6 +67,7 @@ export default function SwipeScreen() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [burst, setBurst] = useState(0);
+  const [signInPrompt, setSignInPrompt] = useState(false);
   const tutorial = useFirstRun(TUTORIAL_KEY);
 
   // Daily featured game — deterministic pick from the popular list, stable for the calendar day.
@@ -107,12 +109,9 @@ export default function SwipeScreen() {
   // Guest save prompt — like/played require login. Returns true when the action must be blocked.
   const promptLogin = useCallback((): boolean => {
     if (!isGuest) return false;
-    Alert.alert(t('guest.title'), t('guest.body'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.signIn'), onPress: () => router.push('/(auth)/login') },
-    ]);
+    setSignInPrompt(true);
     return true;
-  }, [isGuest, t]);
+  }, [isGuest]);
 
   const handleLike = useCallback(
     (game: GameLite) => {
@@ -384,6 +383,16 @@ export default function SwipeScreen() {
 
       {/* First-run coach-mark tutorial (guest-friendly). Shown only after the flag loads as false. */}
       {tutorial.seen === false ? <SwipeTutorial onDone={tutorial.markSeen} /> : null}
+
+      {/* Guest "sign in to save" popup (replaces the native Alert). */}
+      <SignInPrompt
+        visible={signInPrompt}
+        onClose={() => setSignInPrompt(false)}
+        onSignIn={() => {
+          setSignInPrompt(false);
+          router.push('/(auth)/login');
+        }}
+      />
     </View>
   );
 }

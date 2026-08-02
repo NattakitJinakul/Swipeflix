@@ -48,10 +48,7 @@ export default function AccountScreen() {
       {
         text: t('common.signOut'),
         style: 'destructive',
-        onPress: () => {
-          void signOut().catch(() => {});
-          router.replace('/(tabs)');
-        },
+        onPress: () => void signOut().then(() => router.replace('/(auth)/login')).catch(() => {}),
       },
     ]);
   };

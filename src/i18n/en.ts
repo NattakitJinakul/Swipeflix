@@ -44,6 +44,12 @@ export const en = {
     title: 'Sign in',
     body: 'Sign in to save the games you like',
   },
+  signin: {
+    title: 'Sign in to save',
+    body: 'Create a free account to keep the games you like, track played, and see your stats.',
+    cta: 'Sign in',
+    notNow: 'Not now',
+  },
   discover: {
     searchPlaceholder: 'Search games…',
     feedPopular: '🔥 Popular',
@@ -133,6 +139,7 @@ export const en = {
     signUpLink: 'Sign up',
     haveAccount: 'Already have an account? ',
     signInLink: 'Sign in',
+    continueGuest: 'Continue without signing in',
     errFillEmailPassword: 'Enter your email and password',
     errFillAll: 'Please fill in everything',
     errInvalidCredential: 'Incorrect email or password',

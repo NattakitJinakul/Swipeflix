@@ -12,7 +12,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Pressable,
   ScrollView,
@@ -27,6 +26,7 @@ import { TrailerPlayer } from '@/components/TrailerPlayer';
 
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { EmptyState } from '@/components/EmptyState';
+import { SignInPrompt } from '@/components/SignInPrompt';
 import { gameImage } from '@/components/game-image';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -102,6 +102,7 @@ export default function GameDetailScreen() {
   const { isGuest } = useAuth();
   const { liked, like, dislike, markPlayed } = useLibrary();
   const [heroIdx, setHeroIdx] = useState(0);
+  const [signInPrompt, setSignInPrompt] = useState(false);
 
   // Fade the floating decision bar out while scrolling, back in when it settles.
   const barOpacity = useSharedValue(1);
@@ -120,10 +121,7 @@ export default function GameDetailScreen() {
   // Guest save prompt — like/played require login. Returns true when the action must be blocked.
   const promptLogin = (): boolean => {
     if (!isGuest) return false;
-    Alert.alert(t('guest.title'), t('guest.body'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.signIn'), onPress: () => router.push('/(auth)/login') },
-    ]);
+    setSignInPrompt(true);
     return true;
   };
 
@@ -415,6 +413,16 @@ export default function GameDetailScreen() {
         <ActionButton icon="checkmark-done" color={ACTION_COLORS.watched} size={54} onPress={() => save(() => markPlayed(detail))} />
         <ActionButton icon="heart" color={ACTION_COLORS.like} size={62} onPress={() => save(() => like(detail))} />
       </Animated.View>
+
+      {/* Guest "sign in to save" popup (replaces the native Alert). */}
+      <SignInPrompt
+        visible={signInPrompt}
+        onClose={() => setSignInPrompt(false)}
+        onSignIn={() => {
+          setSignInPrompt(false);
+          router.push('/(auth)/login');
+        }}
+      />
     </View>
   );
 }

@@ -44,6 +44,12 @@ export const th = {
     title: 'เข้าสู่ระบบ',
     body: 'บันทึกเกมที่ชอบต้องเข้าสู่ระบบก่อน',
   },
+  signin: {
+    title: 'เข้าสู่ระบบเพื่อบันทึก',
+    body: 'สร้างบัญชีฟรีเพื่อเก็บเกมที่ชอบ บันทึกเกมที่เล่นแล้ว และดูสถิติของคุณ',
+    cta: 'เข้าสู่ระบบ',
+    notNow: 'ไว้ทีหลัง',
+  },
   discover: {
     searchPlaceholder: 'ค้นหาเกม...',
     feedPopular: '🔥 ยอดนิยม',
@@ -133,6 +139,7 @@ export const th = {
     signUpLink: 'สมัครสมาชิก',
     haveAccount: 'มีบัญชีอยู่แล้ว? ',
     signInLink: 'เข้าสู่ระบบ',
+    continueGuest: 'ใช้งานต่อแบบไม่เข้าสู่ระบบ',
     errFillEmailPassword: 'กรอกอีเมลและรหัสผ่าน',
     errFillAll: 'กรอกข้อมูลให้ครบ',
     errInvalidCredential: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',

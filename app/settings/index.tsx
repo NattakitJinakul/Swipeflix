@@ -28,7 +28,11 @@ export default function SettingsIndex() {
   const confirmSignOut = () =>
     Alert.alert(t('account.signOutConfirm'), t('account.signOutConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('common.signOut'), style: 'destructive', onPress: () => void signOut().catch(() => {}) },
+      {
+        text: t('common.signOut'),
+        style: 'destructive',
+        onPress: () => void signOut().then(() => router.replace('/(auth)/login')).catch(() => {}),
+      },
     ]);
 
   const [notifyNew, setNotifyNew] = useState(false);

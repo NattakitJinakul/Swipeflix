@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -33,6 +33,7 @@ export default function LoginScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
   const t = useT();
+  const router = useRouter();
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -119,6 +120,10 @@ export default function LoginScreen() {
               onBusy={setBusy}
               onError={(m) => setError(m || null)}
             />
+
+            <Pressable hitSlop={8} onPress={() => router.replace('/(tabs)')} style={styles.guestBtn}>
+              <Text style={[styles.guestText, { color: c.muted }]}>{t('auth.continueGuest')}</Text>
+            </Pressable>
           </View>
 
           <View style={styles.footer}>
@@ -161,4 +166,6 @@ const styles = StyleSheet.create({
   or: { fontSize: 13 },
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   link: { fontWeight: '800' },
+  guestBtn: { alignItems: 'center', paddingVertical: 10, marginTop: 2 },
+  guestText: { fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
 });
