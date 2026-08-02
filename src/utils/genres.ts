@@ -1,63 +1,49 @@
 /**
- * FreeToGame categories (string genres) + taste stats helper.
- * Genre is already a display string on each game — no id maps needed.
+ * IGDB genres (curated name<->id map) + taste stats helper.
+ * Names are used for chips/display + tasteStats; ids feed the deck `where genres = (...)` filter.
  */
 import type { GameLite } from '../types/game';
 
-/** FreeToGame category slugs (for /games?category= + filter/onboarding chips). */
-export const CATEGORIES: string[] = [
-  'shooter',
-  'mmorpg',
-  'strategy',
-  'moba',
-  'racing',
-  'sports',
-  'social',
-  'sandbox',
-  'open-world',
-  'survival',
-  'pvp',
-  'pve',
-  'pixel',
-  'turn-based',
-  'first-person',
-  'third-person',
-  'top-down',
-  'tower-defense',
-  'mmofps',
-  'fighting',
-  'action-rpg',
-  'action',
-  'military',
-  'martial-arts',
-  'battle-royale',
-  'mmo',
-  'mmorts',
-  'fantasy',
-  'sci-fi',
-  'card',
-  'horror',
-  'zombie',
-  'flight',
-  'low-spec',
-  'anime',
-  '2d',
-  '3d',
+/** Curated IGDB genres (id + display name). */
+export const GENRES: { id: number; name: string }[] = [
+  { id: 4, name: 'Fighting' },
+  { id: 5, name: 'Shooter' },
+  { id: 8, name: 'Platform' },
+  { id: 9, name: 'Puzzle' },
+  { id: 10, name: 'Racing' },
+  { id: 11, name: 'RTS' },
+  { id: 12, name: 'RPG' },
+  { id: 13, name: 'Simulator' },
+  { id: 14, name: 'Sport' },
+  { id: 15, name: 'Strategy' },
+  { id: 16, name: 'Turn-based' },
+  { id: 24, name: 'Tactical' },
+  { id: 25, name: 'Hack and slash' },
+  { id: 26, name: 'Quiz' },
+  { id: 31, name: 'Adventure' },
+  { id: 32, name: 'Indie' },
+  { id: 33, name: 'Arcade' },
+  { id: 34, name: 'Visual Novel' },
+  { id: 35, name: 'Card & Board' },
+  { id: 36, name: 'MOBA' },
+  { id: 2, name: 'Point-and-click' },
 ];
 
-/** Display label for a category slug, e.g. "action-rpg" -> "Action Rpg". */
-export const categoryLabel = (slug: string): string =>
-  slug
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+/** Genre display names (chips / onboarding / filter). */
+export const CATEGORIES: string[] = GENRES.map((g) => g.name);
 
-/** Normalize a FreeToGame genre string to a category slug, e.g. "Action RPG" -> "action-rpg". */
-export const slugifyGenre = (genre: string): string =>
-  genre.trim().toLowerCase().replace(/\s+/g, '-');
+const NAME_TO_ID = new Map(GENRES.map((g) => [g.name, g.id]));
 
-/** Genre is already a string on the game — this is a passthrough for API symmetry. */
-export const genreNames = (genres: string[]): string[] => genres;
+/** IGDB genre id for a curated genre name (undefined if unknown). */
+export const genreId = (name: string): number | undefined => NAME_TO_ID.get(name);
+
+/** Map curated genre names -> IGDB ids (drops unknowns). */
+export const genreIds = (names: string[]): number[] =>
+  names.map((n) => NAME_TO_ID.get(n)).filter((v): v is number => v != null);
+
+/** IGDB genre names are already display strings — identity helper for symmetry. */
+export const categoryLabel = (name: string): string => name;
+export const genreNames = (names: string[]): string[] => names;
 
 export type GenreStat = { name: string; count: number; percent: number };
 

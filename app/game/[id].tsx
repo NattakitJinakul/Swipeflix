@@ -1,8 +1,8 @@
 /**
  * Game detail screen (stack route /game/[id]). Swipeable screenshots hero, meta row
- * (platform · genre · year), description, "เล่นเลย (ฟรี)" primary button -> game_url,
- * minimum system requirements, same-genre related row, floating decision bar.
- * FreeToGame has no trailers/stores/rating. Guest like/played prompts login.
+ * (rating · platform · genre · year), summary, YouTube trailer (react-native-youtube-iframe),
+ * "เว็บ/ร้านค้า" website links (expo-web-browser), same-genre related (similar), floating
+ * decision bar. Guest like/played prompts login (IGDB — rich data, trailers, store links).
  */
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -23,10 +23,11 @@ import {
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import YoutubePlayer from 'react-native-youtube-iframe';
 
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { EmptyState } from '@/components/EmptyState';
-import { gameImage } from '@/components/tmdb-image';
+import { gameImage } from '@/components/game-image';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useGameDetail } from '@/src/hooks/useGameDetail';
@@ -36,6 +37,43 @@ import type { GameLite } from '@/src/types/game';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const HERO_H = 220;
+
+// IGDB website type -> label + icon + BRAND color (real brand colors, not app theme).
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type SiteInfo = { label: string; icon: IoniconName; color: string };
+const SITES: Record<number, SiteInfo> = {
+  1: { label: 'เว็บทางการ', icon: 'globe-outline', color: '#4CAF50' },
+  2: { label: 'Wiki', icon: 'book-outline', color: '#8E9AAF' },
+  3: { label: 'Wikipedia', icon: 'book-outline', color: '#8E9AAF' },
+  4: { label: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
+  5: { label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2' },
+  6: { label: 'Twitch', icon: 'logo-twitch', color: '#9146FF' },
+  8: { label: 'Instagram', icon: 'logo-instagram', color: '#E4405F' },
+  9: { label: 'YouTube', icon: 'logo-youtube', color: '#FF0000' },
+  10: { label: 'App Store', icon: 'logo-apple', color: '#0D96F6' },
+  11: { label: 'App Store', icon: 'logo-apple', color: '#0D96F6' },
+  12: { label: 'Google Play', icon: 'logo-google-playstore', color: '#00C853' },
+  13: { label: 'Steam', icon: 'logo-steam', color: '#66C0F4' },
+  14: { label: 'Reddit', icon: 'logo-reddit', color: '#FF4500' },
+  15: { label: 'itch.io', icon: 'game-controller-outline', color: '#FA5C5C' },
+  16: { label: 'Epic Games', icon: 'game-controller-outline', color: '#E6E6E6' },
+  17: { label: 'GOG', icon: 'game-controller-outline', color: '#A259FF' },
+  18: { label: 'Discord', icon: 'logo-discord', color: '#5865F2' },
+  19: { label: 'Bluesky', icon: 'cloud-outline', color: '#0085FF' },
+  22: { label: 'Xbox', icon: 'logo-xbox', color: '#107C10' },
+  23: { label: 'PlayStation', icon: 'logo-playstation', color: '#0070D1' },
+  24: { label: 'Nintendo', icon: 'game-controller-outline', color: '#E60012' },
+  25: { label: 'Meta', icon: 'logo-facebook', color: '#0668E1' },
+  26: { label: 'GameJolt', icon: 'game-controller-outline', color: '#2EE6A6' },
+};
+const siteInfo = (cat: number): SiteInfo =>
+  SITES[cat] ?? { label: 'เว็บไซต์', icon: 'open-outline', color: '#9CA3AF' };
+// Stores + official first, then socials.
+const SITE_ORDER = [1, 13, 23, 22, 24, 16, 17, 15, 12, 10, 11, 9, 18, 6, 5, 4, 8, 14, 26, 25, 19, 3, 2];
+const siteRank = (cat: number): number => {
+  const i = SITE_ORDER.indexOf(cat);
+  return i === -1 ? 99 : i;
+};
 
 export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,16 +86,17 @@ export default function GameDetailScreen() {
     detail,
     loading,
     error,
-    description,
-    developer,
-    publisher,
-    platform,
-    genre,
-    releaseYear,
-    gameUrl,
-    sysReq,
+    summary,
+    developers,
+    publishers,
+    genres,
+    platforms,
     screenshots,
-    related,
+    trailerYoutubeId,
+    websites,
+    similar,
+    releaseYear,
+    rating,
   } = useGameDetail(Number.isFinite(gameId) ? gameId : null);
   const { isGuest } = useAuth();
   const { liked, like, dislike, markPlayed } = useLibrary();
@@ -87,7 +126,6 @@ export default function GameDetailScreen() {
     return true;
   };
 
-  // Save actions gate on guest; skip (dislike) is always allowed. Then go back.
   const save = (fn: () => void) => {
     if (promptLogin()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -108,9 +146,8 @@ export default function GameDetailScreen() {
     }).catch(() => {});
   };
 
-  const play = () => {
-    if (!gameUrl) return;
-    void WebBrowser.openBrowserAsync(gameUrl).catch(() => {});
+  const openSite = (url: string) => {
+    void WebBrowser.openBrowserAsync(url).catch(() => {});
   };
 
   if (loading) {
@@ -139,19 +176,12 @@ export default function GameDetailScreen() {
     .map((u) => gameImage(u))
     .filter((u): u is string => !!u);
 
-  const meta = [platform, genre, releaseYear ? String(releaseYear) : null].filter(
-    (m): m is string => !!m,
-  );
-
-  const sysRows: { label: string; value?: string }[] = sysReq
-    ? [
-        { label: 'OS', value: sysReq.os },
-        { label: 'CPU', value: sysReq.processor },
-        { label: 'RAM', value: sysReq.memory },
-        { label: 'GPU', value: sysReq.graphics },
-        { label: 'พื้นที่', value: sysReq.storage },
-      ].filter((r) => !!r.value)
-    : [];
+  const meta = [
+    rating != null ? `⭐ ${Math.round(rating)}/100` : null,
+    platforms[0] ?? null,
+    genres[0] ?? null,
+    releaseYear ? String(releaseYear) : null,
+  ].filter((m): m is string => !!m);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
@@ -229,20 +259,6 @@ export default function GameDetailScreen() {
           ) : null}
         </View>
 
-        {/* Play (free) primary CTA */}
-        {gameUrl ? (
-          <Pressable
-            onPress={play}
-            style={({ pressed }) => [
-              styles.libBtn,
-              { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Ionicons name="play" size={18} color="#fff" />
-            <Text style={[styles.libBtnText, { color: '#fff' }]}>เล่นเลย (ฟรี)</Text>
-          </Pressable>
-        ) : null}
-
         {/* In-library hint */}
         {inLibrary ? (
           <View style={[styles.libHint, { backgroundColor: c.surface }]}>
@@ -251,46 +267,78 @@ export default function GameDetailScreen() {
           </View>
         ) : null}
 
-        {/* Description */}
-        {description ? (
+        {/* Summary */}
+        {summary ? (
           <Section title="เกี่ยวกับเกม" color={c.text}>
-            <Text style={[styles.body, { color: c.muted }]}>{description}</Text>
+            <Text style={[styles.body, { color: c.muted }]}>{summary}</Text>
           </Section>
         ) : null}
 
-        {/* Studios */}
-        {developer || publisher ? (
-          <Section title="ทีมพัฒนา" color={c.text}>
-            {developer ? (
-              <Text style={[styles.body, { color: c.muted }]}>
-                ผู้พัฒนา: <Text style={{ color: c.text, fontWeight: '700' }}>{developer}</Text>
-              </Text>
-            ) : null}
-            {publisher ? (
-              <Text style={[styles.body, { color: c.muted }]}>ผู้จัดจำหน่าย: {publisher}</Text>
-            ) : null}
-          </Section>
-        ) : null}
-
-        {/* Minimum system requirements */}
-        {sysRows.length ? (
-          <Section title="สเปคขั้นต่ำ" color={c.text}>
-            <View style={[styles.card, { backgroundColor: c.surface }]}>
-              {sysRows.map((r) => (
-                <View key={r.label} style={styles.sysRow}>
-                  <Text style={[styles.sysLabel, { color: c.muted }]}>{r.label}</Text>
-                  <Text style={[styles.sysValue, { color: c.text }]}>{r.value}</Text>
-                </View>
-              ))}
+        {/* Trailer (YouTube) */}
+        {trailerYoutubeId ? (
+          <Section title="ตัวอย่าง" color={c.text}>
+            <View style={styles.trailer}>
+              <YoutubePlayer height={SCREEN_W * 0.5625} videoId={trailerYoutubeId} play={false} />
             </View>
           </Section>
         ) : null}
 
-        {/* Same genre related */}
-        {related.length ? (
+        {/* Genre chips */}
+        {genres.length ? (
+          <View style={styles.chipRow}>
+            {genres.map((g) => (
+              <View key={g} style={[styles.chip, { backgroundColor: c.surface }]}>
+                <Text style={[styles.chipText, { color: c.text }]}>{g}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Studios */}
+        {developers.length || publishers.length ? (
+          <Section title="ทีมพัฒนา" color={c.text}>
+            {developers.length ? (
+              <Text style={[styles.body, { color: c.muted }]}>
+                ผู้พัฒนา: <Text style={{ color: c.text, fontWeight: '700' }}>{developers.join(' · ')}</Text>
+              </Text>
+            ) : null}
+            {publishers.length ? (
+              <Text style={[styles.body, { color: c.muted }]}>ผู้จัดจำหน่าย: {publishers.join(' · ')}</Text>
+            ) : null}
+          </Section>
+        ) : null}
+
+        {/* Websites / stores */}
+        {websites.length ? (
+          <Section title="เว็บ / ร้านค้า" color={c.text}>
+            <View style={styles.chipWrap}>
+              {[...websites]
+                .sort((a, b) => siteRank(a.category) - siteRank(b.category))
+                .map((w) => {
+                  const info = siteInfo(w.category);
+                  return (
+                    <Pressable
+                      key={`${w.category}-${w.url}`}
+                      onPress={() => openSite(w.url)}
+                      style={({ pressed }) => [
+                        styles.storeChip,
+                        { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 },
+                      ]}
+                    >
+                      <Ionicons name={info.icon} size={16} color={info.color} />
+                      <Text style={[styles.chipText, { color: c.text }]}>{info.label}</Text>
+                    </Pressable>
+                  );
+                })}
+            </View>
+          </Section>
+        ) : null}
+
+        {/* Similar games */}
+        {similar.length ? (
           <Section title="เกมแนวเดียวกัน" color={c.text}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
-              {related.map((g: GameLite) => {
+              {similar.map((g: GameLite) => {
                 const uri = gameImage(g.image);
                 return (
                   <Pressable
@@ -377,39 +425,37 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '900' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 8 },
   meta: { fontSize: 14, fontWeight: '600' },
-  libBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 16,
-    paddingVertical: 14,
-    borderRadius: 14,
-  },
-  libBtnText: { fontWeight: '800', fontSize: 15 },
   libHint: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
     marginHorizontal: 16,
-    marginTop: 10,
+    marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
   },
   libHintText: { fontSize: 13, fontWeight: '700' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginTop: 16 },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  storeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
   section: { paddingHorizontal: 16, marginTop: 24 },
   sectionTitle: { fontSize: 17, fontWeight: '800', marginBottom: 10 },
   body: { fontSize: 14, lineHeight: 21, marginTop: 4 },
-  card: { borderRadius: 14, padding: 14, gap: 10 },
-  sysRow: { flexDirection: 'row', gap: 12 },
-  sysLabel: { width: 52, fontSize: 13, fontWeight: '700' },
-  sysValue: { flex: 1, fontSize: 13 },
+  trailer: { borderRadius: 12, overflow: 'hidden', backgroundColor: '#000' },
   hRow: { gap: 12, paddingRight: 16 },
   posterFallback: { alignSelf: 'center', marginTop: '30%' },
-  seriesCard: { width: 150 },
-  seriesPoster: { width: 150, height: 84, borderRadius: 10, overflow: 'hidden', marginBottom: 6 },
+  seriesCard: { width: 120 },
+  seriesPoster: { width: 120, height: 160, borderRadius: 10, overflow: 'hidden', marginBottom: 6 },
   seriesTitle: { fontSize: 12, fontWeight: '600' },
 });

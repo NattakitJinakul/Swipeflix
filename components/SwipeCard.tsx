@@ -1,5 +1,5 @@
 /**
- * SwipeCard — single presentational movie card (poster, rating, title, year, genres).
+ * SwipeCard — single presentational game card (cover, rating, title, year, genres).
  * Pure/props-driven: no data fetching, no store. Overlay labels LIKE/NOPE/SEEN
  * fade in with drag distance when the parent passes `dragX`/`dragY` shared values.
  * See docs/06-design-ui.md + docs/02-screens.md.
@@ -18,7 +18,7 @@ import Animated, {
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { GameLite } from '@/src/types/game';
-import { gameImage } from './tmdb-image';
+import { gameImage } from './game-image';
 
 export type SwipeCardProps = {
   game: GameLite;
@@ -93,18 +93,14 @@ export function SwipeCard({
         pointerEvents="none"
       />
 
-      {/* platform + genre pill */}
+      {/* rating + genre badges */}
       <View style={styles.topBadges} pointerEvents="none">
-        <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-          <Ionicons
-            name={game.platform.toLowerCase().includes('browser') ? 'globe-outline' : 'desktop-outline'}
-            size={13}
-            color="#fff"
-          />
-          <Text style={styles.ratingText}>
-            {game.platform.toLowerCase().includes('browser') ? 'Browser' : 'PC'}
-          </Text>
-        </View>
+        {game.rating != null ? (
+          <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+            <Ionicons name="star" size={13} color="#F5C518" />
+            <Text style={styles.ratingText}>{`${Math.round(game.rating)}/100`}</Text>
+          </View>
+        ) : null}
         {game.genre ? (
           <View style={styles.mcPill}>
             <Text style={styles.mcText}>{game.genre}</Text>

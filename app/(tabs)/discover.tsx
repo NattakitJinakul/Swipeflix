@@ -38,7 +38,7 @@ export default function DiscoverScreen() {
     setGridLoading(true);
     const fetch = feed === 'popular' ? popularGames() : topRatedGames();
     fetch
-      .then((games) => active && setGrid(games))
+      .then((paged) => active && setGrid(paged.results))
       .catch(() => active && setGrid([]))
       .finally(() => active && setGridLoading(false));
     return () => {
@@ -96,7 +96,7 @@ export default function DiscoverScreen() {
       ) : (
         <PosterGrid
           items={data}
-          numColumns={2}
+          numColumns={3}
           onPress={openDetail}
           ListEmptyComponent={
             searching ? (

@@ -55,7 +55,7 @@ export function canSwipe(plan: Plan, todayCount: number): boolean {
   return swipeLimit == null || todayCount < swipeLimit;
 }
 
-/** True when the user may add another movie to their watchlist given current count. */
+/** True when the user may add another game to their watchlist given current count. */
 export function canAddToWatchlist(plan: Plan, count: number): boolean {
   const { watchlistLimit } = getPlan(plan);
   return watchlistLimit == null || count < watchlistLimit;

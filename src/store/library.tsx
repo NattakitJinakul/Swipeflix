@@ -6,8 +6,7 @@
  * Firestore subcollections under the user doc, one per status:
  *   users/{uid}/liked/{gameId}, users/{uid}/played/{gameId}, users/{uid}/disliked/{gameId}
  * liked/played store GameLite; disliked stores just the id.
- * (Firestore CRUD is inlined here rather than in firebase/library.ts, which is kept as-is for
- *  the preserved movie build on branch swipeflix-movie.)
+ * (Firestore CRUD is inlined here.)
  */
 import {
   collection,
@@ -88,6 +87,7 @@ const toLite = (data: Record<string, unknown>): GameLite => ({
   genre: String(data.genre ?? ''),
   platform: String(data.platform ?? ''),
   year: data.year != null ? Number(data.year) : null,
+  rating: data.rating != null ? Number(data.rating) : null,
 });
 
 async function fetchLibrary(uid: string) {

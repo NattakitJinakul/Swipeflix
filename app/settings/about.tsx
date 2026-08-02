@@ -1,6 +1,6 @@
 /**
- * About — app version, REQUIRED TMDB attribution, Privacy/Terms links (mock).
- * TMDB credit line is mandatory per docs/04-tmdb-api.md.
+ * About — app version, REQUIRED IGDB attribution, Privacy/Terms links (mock).
+ * IGDB credit line is mandatory (game data provided by IGDB.com, powered by Twitch).
  */
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -26,26 +26,26 @@ export default function AboutScreen() {
     <ScrollView style={{ backgroundColor: c.background }} contentContainerStyle={styles.content}>
       <View style={styles.hero}>
         <View style={[styles.logo, { backgroundColor: c.primary }]}>
-          <Ionicons name="film" size={34} color="#fff" />
+          <Ionicons name="game-controller" size={34} color="#fff" />
         </View>
-        <Text style={[styles.appName, { color: c.text }]}>Swipeflix</Text>
+        <Text style={[styles.appName, { color: c.text }]}>Swipeplay</Text>
         <Text style={[styles.version, { color: c.muted }]}>เวอร์ชัน {APP_VERSION}</Text>
       </View>
 
-      {/* TMDB attribution — REQUIRED */}
-      <View style={[styles.tmdbCard, { backgroundColor: c.surface }]}>
-        <Text style={[styles.tmdbLogo, { color: '#01B4E4' }]}>TMDB</Text>
-        <Text style={[styles.tmdbText, { color: c.text }]}>
-          This product uses the TMDB API but is not endorsed or certified by TMDB.
+      {/* IGDB attribution — REQUIRED */}
+      <View style={[styles.igdbCard, { backgroundColor: c.surface }]}>
+        <Text style={[styles.igdbLogo, { color: '#9147FF' }]}>IGDB</Text>
+        <Text style={[styles.igdbText, { color: c.text }]}>
+          This product uses the IGDB API. Game data is provided by IGDB.com (powered by Twitch).
         </Text>
-        <Text style={[styles.tmdbNote, { color: c.muted }]}>
-          ข้อมูลหนัง โปสเตอร์ และเรตติ้งทั้งหมดจาก The Movie Database (TMDB)
+        <Text style={[styles.igdbNote, { color: c.muted }]}>
+          ข้อมูลเกม รูปปก และเรตติ้งทั้งหมดจาก IGDB.com
         </Text>
         <Pressable
-          onPress={() => open('https://www.themoviedb.org/')}
-          style={({ pressed }) => [styles.tmdbLink, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() => open('https://www.igdb.com/')}
+          style={({ pressed }) => [styles.igdbLink, { opacity: pressed ? 0.7 : 1 }]}
         >
-          <Text style={[styles.tmdbLinkText, { color: c.primary }]}>themoviedb.org</Text>
+          <Text style={[styles.igdbLinkText, { color: c.primary }]}>igdb.com</Text>
           <Ionicons name="open-outline" size={14} color={c.primary} />
         </Pressable>
       </View>
@@ -56,7 +56,7 @@ export default function AboutScreen() {
         <LinkRow c={c} icon="document-text-outline" label="ข้อกำหนดการใช้งาน" onPress={() => open('https://example.com/terms')} last />
       </View>
 
-      <Text style={[styles.copyright, { color: c.muted }]}>© 2026 Swipeflix</Text>
+      <Text style={[styles.copyright, { color: c.muted }]}>© 2026 Swipeplay</Text>
     </ScrollView>
   );
 }
@@ -96,12 +96,12 @@ const styles = StyleSheet.create({
   logo: { width: 72, height: 72, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   appName: { fontSize: 24, fontWeight: '900' },
   version: { fontSize: 14, fontWeight: '600' },
-  tmdbCard: { borderRadius: 16, padding: 18, gap: 10 },
-  tmdbLogo: { fontSize: 22, fontWeight: '900', letterSpacing: 1 },
-  tmdbText: { fontSize: 14, fontWeight: '600', lineHeight: 20 },
-  tmdbNote: { fontSize: 13, lineHeight: 19 },
-  tmdbLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  tmdbLinkText: { fontSize: 14, fontWeight: '700' },
+  igdbCard: { borderRadius: 16, padding: 18, gap: 10 },
+  igdbLogo: { fontSize: 22, fontWeight: '900', letterSpacing: 1 },
+  igdbText: { fontSize: 14, fontWeight: '600', lineHeight: 20 },
+  igdbNote: { fontSize: 13, lineHeight: 19 },
+  igdbLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  igdbLinkText: { fontSize: 14, fontWeight: '700' },
   list: { borderRadius: 14, overflow: 'hidden' },
   linkRow: {
     flexDirection: 'row',

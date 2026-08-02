@@ -1,62 +1,49 @@
-# 🎬 Swipeflix
+# Swipeplay 🎮
 
-**"หนังคืนนี้ดูอะไรดี?"** — swipe movies like Tinder to beat choice paralysis.
+A game-discovery mobile app built with Expo + React Native. Swipe through games Tinder-style —
+right to like (อยากเล่น), left to skip, up to mark played (เล่นแล้ว) — powered by the
+[IGDB](https://www.igdb.com/) API. **Guest-first**: browse and swipe with no account; sign in only
+to save your library and see your taste stats.
 
-Swipe right to save, left to pass, tap for full details, trailer, and where to watch. Built on the [TMDB API](https://www.themoviedb.org/).
+## Features
 
-## ✨ Features
+- **Swipe deck** — like / skip / played, undo, surprise-me, confetti on like
+- **Sources & filters** — ยอดนิยม / ใหม่ / คะแนนสูง / ตามที่ชอบ, filter by IGDB genre
+- **Game detail** — screenshots hero, summary, YouTube trailer, studios, ratings, store/official
+  website links, and similar games
+- **Library** — อยากเล่น / เล่นแล้ว lists, sort, move & remove
+- **Profile** — taste chart by genre, Game DNA (favorite decade + achievement badges), avg rating
+- **Guest-first auth** — full browsing without login; login prompt only when saving
 
-- **Swipe deck** — Tinder-style cards, 60fps gesture + rotation, LIKE/NOPE/SEEN overlays, haptics, match confetti
-- **Watchlist** — liked / watched lists, synced to Firebase per user
-- **Discover / Search** — trending grid + debounced movie search
-- **Detail** — backdrop, cast, director, YouTube trailer, streaming providers, related movies
-- **Auth** — email/password + Google sign-in, onboarding (language, region, favorite genres)
-- **Subscription tiers** — Free / Plus / Pro (mock payment)
-- **Profile** — taste chart from your likes, stats, settings (theme, region, language)
+## Tech
 
-## 🧱 Tech Stack
+- Expo (SDK 54) · Expo Router · React Native · TypeScript
+- IGDB API (`https://api.igdb.com/v4`) — apicalypse POST queries, Twitch-issued auth
+- Firebase Auth + Firestore (optional — only needed to persist a signed-in user's library)
+- Reanimated + Gesture Handler (swipe deck), expo-image, react-native-youtube-iframe (trailers)
 
-- **Expo SDK 54** · expo-router v6 (file-based routing) · TypeScript
-- **Reanimated 4** + gesture-handler — swipe animations on the UI thread
-- **Firebase** (Auth + Firestore) — accounts, watchlist, subscription
-- **TMDB API** — movie data, posters, trailers, watch providers
-- `react-native-youtube-iframe` (trailers), `expo-image` (poster caching), `expo-haptics`
+## Setup
 
-## 🚀 Setup
+```bash
+npm install
+cp .env.example .env       # then fill in the values below
+npx expo start
+```
 
-1. Install dependencies
+### Environment variables (`.env`)
 
-   ```bash
-   npm install
-   ```
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `EXPO_PUBLIC_IGDB_CLIENT_ID` | ✅ | Your Twitch application Client ID |
+| `EXPO_PUBLIC_IGDB_TOKEN` | ✅ | App access token minted from your Twitch client credentials |
+| `EXPO_PUBLIC_FIREBASE_*` | optional | Only for saving a signed-in user's library (guests work without it) |
 
-2. Configure environment — copy the example and fill in your keys
+IGDB is powered by Twitch: create a Twitch application to get a **Client ID** + **Client Secret**,
+then mint an **App Access Token** (OAuth client-credentials flow) and put it in
+`EXPO_PUBLIC_IGDB_TOKEN`. Every request sends both as `Client-ID` and `Authorization: Bearer`
+headers.
 
-   ```bash
-   cp .env.example .env
-   ```
+## Attribution
 
-   Fill `.env`:
-   - `EXPO_PUBLIC_TMDB_TOKEN` — TMDB v4 Read Access Token ([get one here](https://www.themoviedb.org/settings/api))
-   - `EXPO_PUBLIC_FIREBASE_*` — Firebase web app config (Auth + Firestore enabled)
-   - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` / `_IOS_CLIENT_ID` / `_ANDROID_CLIENT_ID` — Google OAuth client ids (optional; Google button disables itself if unset)
-
-3. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-   Open in Expo Go, an Android emulator, or an iOS simulator.
-
-## 📑 Documentation
-
-Full planning docs (architecture, screens, TMDB usage, design, auth/subscription) live in [`docs/`](./docs/README.md).
-
-## 📸 Screenshots
-
-_TODO: add screenshots — Swipe deck · Detail · Watchlist · Profile taste chart · Pricing._
-
-## 📝 Attribution
-
-This product uses the TMDB API but is not endorsed or certified by TMDB.
+This product uses the IGDB API. Game data, cover art, and ratings are provided by
+[IGDB.com](https://www.igdb.com/) (powered by Twitch).

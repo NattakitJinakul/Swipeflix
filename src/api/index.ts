@@ -1,2 +1,2 @@
-export * from './freetogame';
+export * from './igdb';
 export * from './endpoints';

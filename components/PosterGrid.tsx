@@ -1,5 +1,5 @@
 /**
- * PosterGrid — FlatList grid of movie posters (watchlist / discover). Pure/props-driven.
+ * PosterGrid — FlatList grid of game covers (watchlist / discover). Pure/props-driven.
  * expo-image with fade-in, rounded corners, subtle shadow. See docs/02-screens.md.
  */
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +16,7 @@ import {
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { GameLite } from '@/src/types/game';
-import { gameImage } from './tmdb-image';
+import { gameImage } from './game-image';
 
 export type PosterGridProps = {
   items: GameLite[];
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   row: { gap: GAP },
   cell: {},
   poster: {
-    aspectRatio: 16 / 9,
+    aspectRatio: 2 / 3,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',

@@ -85,7 +85,7 @@ export default function WatchlistScreen() {
         subtitle={
           tab === 'want'
             ? 'ปัดขวาเกมที่ชอบในหน้า Swipe เพื่อเก็บไว้ที่นี่'
-            : 'ทำเครื่องหมาย "เล่นแล้ว" จากหน้า Swipe หรือ watchlist'
+            : 'ทำเครื่องหมาย "เล่นแล้ว" จากหน้า Swipe หรือหน้ารายการ'
         }
         actionLabel="ไปปัดเกม"
         onAction={() => router.push('/(tabs)')}
@@ -135,7 +135,7 @@ export default function WatchlistScreen() {
         ))}
       </View>
 
-      <PosterGrid items={data} numColumns={2} onPress={onPressItem} ListEmptyComponent={emptyComponent} />
+      <PosterGrid items={data} numColumns={3} onPress={onPressItem} ListEmptyComponent={emptyComponent} />
     </View>
   );
 }

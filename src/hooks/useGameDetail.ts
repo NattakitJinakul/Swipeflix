@@ -1,7 +1,7 @@
 /**
- * useGameDetail — fetch a game's full detail from FreeToGame (/game?id=) + related list.
- * No trailers/stores/rating on FreeToGame. Surfaces description, studios, sys req,
- * screenshots, gameUrl, and same-genre related games.
+ * useGameDetail — fetch a game's full detail from IGDB + mapped relations.
+ * Surfaces summary, studios, genres, platforms, screenshots, YouTube trailer id,
+ * websites (store/official links), rating, release year, and similar games.
  */
 import { useCallback, useEffect, useState } from 'react';
 
@@ -12,16 +12,17 @@ export type UseGameDetail = {
   detail: GameDetail | null;
   loading: boolean;
   error: boolean;
-  description: string;
-  developer: string;
-  publisher: string;
-  platform: string;
-  genre: string;
-  releaseYear: number | null;
-  gameUrl: string;
-  sysReq: GameDetail['sysReq'];
+  summary: string;
+  developers: string[];
+  publishers: string[];
+  genres: string[];
+  platforms: string[];
   screenshots: string[];
-  related: GameLite[];
+  trailerYoutubeId: string | null;
+  websites: { url: string; category: number }[];
+  similar: GameLite[];
+  releaseYear: number | null;
+  rating: number | null;
   reload: () => void;
 };
 
@@ -58,16 +59,17 @@ export function useGameDetail(id: number | null): UseGameDetail {
     detail,
     loading,
     error,
-    description: detail?.description ?? '',
-    developer: detail?.developer ?? '',
-    publisher: detail?.publisher ?? '',
-    platform: detail?.platform ?? '',
-    genre: detail?.genre ?? '',
-    releaseYear: detail?.year ?? null,
-    gameUrl: detail?.gameUrl ?? '',
-    sysReq: detail?.sysReq ?? null,
+    summary: detail?.summary ?? '',
+    developers: detail?.developers ?? [],
+    publishers: detail?.publishers ?? [],
+    genres: detail?.genres ?? [],
+    platforms: detail?.platforms ?? [],
     screenshots: detail?.screenshots ?? [],
-    related: detail?.related ?? [],
+    trailerYoutubeId: detail?.trailerYoutubeId ?? null,
+    websites: detail?.websites ?? [],
+    similar: detail?.similar ?? [],
+    releaseYear: detail?.year ?? null,
+    rating: detail?.rating ?? null,
     reload,
   };
 }

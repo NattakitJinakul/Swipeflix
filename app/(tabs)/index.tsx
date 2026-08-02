@@ -30,19 +30,12 @@ const { width: SCREEN_W } = Dimensions.get('window');
 const SOURCES: { key: DeckSource; label: string }[] = [
   { key: 'popular', label: 'ยอดนิยม' },
   { key: 'new', label: 'ใหม่' },
-  { key: 'relevance', label: 'แนะนำ' },
+  { key: 'top_rated', label: 'คะแนนสูง' },
   { key: 'for_you', label: 'ตามที่ชอบ' },
 ];
 
-type PlatformKey = 'all' | 'pc' | 'browser';
-const PLATFORMS: { key: PlatformKey; label: string }[] = [
-  { key: 'all', label: 'ทั้งหมด' },
-  { key: 'pc', label: 'PC' },
-  { key: 'browser', label: 'เบราว์เซอร์' },
-];
-
-// A trimmed chip set (the full list is long); onboarding/preferences expose all CATEGORIES.
-const FILTER_CATEGORIES = CATEGORIES.slice(0, 16);
+// Genre chip set for the filter bar (onboarding/preferences expose all CATEGORIES).
+const FILTER_CATEGORIES = CATEGORIES;
 
 export default function SwipeScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -127,26 +120,15 @@ export default function SwipeScreen() {
 
   const openDetail = useCallback((id: number) => router.push(`/game/${id}`), []);
 
-  const toggleCategory = useCallback(
-    (slug: string) => {
-      const has = deck.filters.categories.includes(slug);
+  const toggleGenre = useCallback(
+    (name: string) => {
+      const has = deck.filters.genres.includes(name);
       deck.setFilters({
-        ...deck.filters,
-        categories: has
-          ? deck.filters.categories.filter((s) => s !== slug)
-          : [...deck.filters.categories, slug],
+        genres: has ? deck.filters.genres.filter((g) => g !== name) : [...deck.filters.genres, name],
       });
     },
     [deck],
   );
-
-  const setPlatform = useCallback(
-    (p: PlatformKey) => {
-      deck.setFilters({ ...deck.filters, platform: p === 'all' ? undefined : p });
-    },
-    [deck],
-  );
-  const currentPlatform: PlatformKey = deck.filters.platform ?? 'all';
 
   const deckEmpty = !deck.loading && deck.deck.length - deck.index <= 0;
 
@@ -197,36 +179,13 @@ export default function SwipeScreen() {
             style={styles.hScroll}
             contentContainerStyle={styles.filterRow}
           >
-            {FILTER_CATEGORIES.map((slug) => (
+            {FILTER_CATEGORIES.map((name) => (
               <GenreChip
-                key={slug}
-                label={categoryLabel(slug)}
-                selected={deck.filters.categories.includes(slug)}
-                onToggle={() => toggleCategory(slug)}
+                key={name}
+                label={categoryLabel(name)}
+                selected={deck.filters.genres.includes(name)}
+                onToggle={() => toggleGenre(name)}
               />
-            ))}
-          </ScrollView>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.hScroll}
-            contentContainerStyle={styles.filterRow}
-          >
-            {PLATFORMS.map((p) => (
-              <Pressable
-                key={p.key}
-                onPress={() => setPlatform(p.key)}
-                style={[
-                  styles.miniChip,
-                  { backgroundColor: currentPlatform === p.key ? c.primary : c.surface },
-                ]}
-              >
-                <Text
-                  style={{ color: currentPlatform === p.key ? '#fff' : c.muted, fontWeight: '700' }}
-                >
-                  {p.label}
-                </Text>
-              </Pressable>
             ))}
           </ScrollView>
         </View>

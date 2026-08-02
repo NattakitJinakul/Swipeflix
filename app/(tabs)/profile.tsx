@@ -51,6 +51,11 @@ export default function ProfileScreen() {
   }, [user?.uid]);
 
   const dna = useMemo(() => computeDNA(liked, played), [liked, played]);
+  const avgRating = useMemo(() => {
+    const rated = liked.filter((g) => g.rating != null);
+    if (!rated.length) return 0;
+    return Math.round(rated.reduce((a, g) => a + (g.rating ?? 0), 0) / rated.length);
+  }, [liked]);
   const planDef = getPlan(plan);
 
   const statRow = (
@@ -58,9 +63,9 @@ export default function ProfileScreen() {
       <StatBadge value={liked.length} label="อยากเล่น" icon="heart" color={c.like} />
       <StatBadge value={played.length} label="เล่นแล้ว" icon="game-controller" color={c.watched} />
       <StatBadge
-        value={dna.topGenres.length}
-        label="แนวที่ชอบ"
-        icon="grid"
+        value={avgRating > 0 ? avgRating : '—'}
+        label="คะแนนเฉลี่ย"
+        icon="star"
       />
     </View>
   );

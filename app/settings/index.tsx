@@ -43,12 +43,12 @@ export default function SettingsIndex() {
       </Group>
 
       <Group title="ค่ากำหนด" color={c.muted}>
-        <NavRow c={c} icon="options-outline" label="ธีม · ภาษา · ภูมิภาค · แนวหนัง" onPress={() => router.push('/settings/preferences')} />
+        <NavRow c={c} icon="options-outline" label="ธีม · ภาษา · ภูมิภาค · แนวเกม" onPress={() => router.push('/settings/preferences')} />
       </Group>
 
       <Group title="เนื้อหา" color={c.muted}>
         <ToggleRow c={c} icon="eye-off-outline" label="ซ่อนเนื้อหาผู้ใหญ่" value={hideAdult} onChange={setHideAdult} />
-        <ToggleRow c={c} icon="notifications-outline" label="แจ้งเตือนหนังใหม่" value={notifyNew} onChange={setNotifyNew} last />
+        <ToggleRow c={c} icon="notifications-outline" label="แจ้งเตือนเกมใหม่" value={notifyNew} onChange={setNotifyNew} last />
       </Group>
 
       <Group title="ข้อมูล" color={c.muted}>

@@ -1,6 +1,6 @@
 /**
  * Round colored action button (dislike / watched / like / undo) with press-scale spring.
- * Shared by the Swipe deck and the Movie detail floating bar.
+ * Shared by the Swipe deck and the game detail floating bar.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet } from 'react-native';
@@ -8,7 +8,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-/** Pastel action palette shared by the Swipe deck + Movie detail bar. */
+/** Pastel action palette shared by the Swipe deck + game detail bar. */
 export const ACTION_COLORS = {
   dislike: '#FF8095', // soft coral
   watched: '#8FB8F6', // soft blue
