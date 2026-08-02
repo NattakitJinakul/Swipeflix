@@ -6,6 +6,7 @@
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   interpolate,
@@ -49,12 +50,21 @@ export function SwipeCard({
 
   const likeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(x.value, [10, swipeThreshold], [0, 1], 'clamp'),
+    transform: [
+      { rotate: '-12deg' },
+      { scale: interpolate(x.value, [10, swipeThreshold], [0.6, 1], 'clamp') },
+    ],
   }));
   const nopeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(x.value, [-swipeThreshold, -10], [1, 0], 'clamp'),
+    transform: [
+      { rotate: '12deg' },
+      { scale: interpolate(x.value, [-swipeThreshold, -10], [1, 0.6], 'clamp') },
+    ],
   }));
   const seenStyle = useAnimatedStyle(() => ({
     opacity: interpolate(y.value, [-swipeThreshold, -10], [1, 0], 'clamp'),
+    transform: [{ scale: interpolate(y.value, [-swipeThreshold, -10], [1, 0.6], 'clamp') }],
   }));
 
   const uri = posterUri(movie.poster, 'w500');
@@ -75,8 +85,13 @@ export function SwipeCard({
         </View>
       )}
 
-      {/* bottom scrim for legible text over poster */}
-      <View style={styles.scrim} pointerEvents="none" />
+      {/* bottom gradient scrim for legible text over poster (fades, no hard block) */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.88)']}
+        locations={[0, 0.55, 1]}
+        style={styles.scrim}
+        pointerEvents="none"
+      />
 
       {/* rating badge */}
       <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
@@ -101,15 +116,24 @@ export function SwipeCard({
         ) : null}
       </View>
 
-      {/* swipe overlays */}
+      {/* swipe overlays — filled badges */}
       <Animated.View style={[styles.overlay, styles.overlayLeft, likeStyle]} pointerEvents="none">
-        <Text style={[styles.overlayLabel, { color: c.like, borderColor: c.like }]}>LIKE</Text>
+        <View style={[styles.badge, { backgroundColor: c.like }]}>
+          <Ionicons name="heart" size={22} color="#fff" />
+          <Text style={styles.badgeText}>ชอบ</Text>
+        </View>
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayRight, nopeStyle]} pointerEvents="none">
-        <Text style={[styles.overlayLabel, { color: c.dislike, borderColor: c.dislike }]}>NOPE</Text>
+        <View style={[styles.badge, { backgroundColor: c.dislike }]}>
+          <Ionicons name="thumbs-down" size={22} color="#fff" />
+          <Text style={styles.badgeText}>ไม่ชอบ</Text>
+        </View>
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayTop, seenStyle]} pointerEvents="none">
-        <Text style={[styles.overlayLabel, { color: c.watched, borderColor: c.watched }]}>SEEN</Text>
+        <View style={[styles.badge, { backgroundColor: c.watched }]}>
+          <Ionicons name="eye" size={22} color="#fff" />
+          <Text style={styles.badgeText}>เคยดู</Text>
+        </View>
       </Animated.View>
     </View>
   );
@@ -132,8 +156,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: '45%',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    height: '42%',
   },
   ratingBadge: {
     position: 'absolute',
@@ -158,18 +181,24 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   chipText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  overlay: { position: 'absolute', top: 28 },
-  overlayLeft: { left: 20 },
-  overlayRight: { right: 20 },
-  overlayTop: { alignSelf: 'center', top: '42%' },
-  overlayLabel: {
-    fontSize: 34,
-    fontWeight: '900',
-    letterSpacing: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderWidth: 4,
-    borderRadius: 10,
-    transform: [{ rotate: '-12deg' }],
+  overlay: { position: 'absolute', top: 34 },
+  overlayLeft: { left: 22 },
+  overlayRight: { right: 22 },
+  overlayTop: { alignSelf: 'center', top: '40%' },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
+  badgeText: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 1 },
 });

@@ -126,6 +126,12 @@ function mapDetail(raw: TMDBMovieDetailRaw, region = 'TH'): MovieDetail {
     logo: p.logo_path,
   }));
   const recommendations: MovieLite[] = (raw.recommendations?.results ?? []).map(toMovieLite);
+  const galleryBackdrops = (raw.images?.backdrops ?? []).map((b) => b.file_path).filter(Boolean);
+  const backdrops = galleryBackdrops.length
+    ? galleryBackdrops.slice(0, 10)
+    : raw.backdrop_path
+      ? [raw.backdrop_path]
+      : [];
   const regionProviders = raw['watch/providers']?.results?.[region];
   const watchProviders: WatchProvider[] = (regionProviders?.flatrate ?? []).map((p) => ({
     providerId: p.provider_id,
@@ -151,14 +157,17 @@ function mapDetail(raw: TMDBMovieDetailRaw, region = 'TH'): MovieDetail {
     videos,
     recommendations,
     watchProviders,
+    backdrops,
   };
 }
 
 export async function movieDetail(id: number, language?: string, region = 'TH'): Promise<MovieDetail> {
   const params: TmdbParams = {
-    append_to_response: 'credits,videos,recommendations,watch/providers',
+    append_to_response: 'credits,videos,recommendations,watch/providers,images',
     // Include EN + TH videos so Thai-locale requests still surface English-only trailers.
     include_video_language: 'en,th',
+    // Language-neutral + EN/TH backdrops for the hero gallery.
+    include_image_language: 'en,th,null',
   };
   if (language) params.language = language;
   const raw = await tmdb<TMDBMovieDetailRaw>(`/movie/${id}`, params);

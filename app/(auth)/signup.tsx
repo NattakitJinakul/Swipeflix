@@ -62,7 +62,11 @@ export default function SignupScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <View style={styles.brand}>
             <Text style={[styles.logo, { color: c.primary }]}>SWIPEFLIX</Text>
             <Text style={[styles.tagline, { color: c.muted }]}>สร้างบัญชีเพื่อเริ่มปัด</Text>

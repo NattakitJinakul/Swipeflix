@@ -11,6 +11,7 @@ import { useCallback, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -89,23 +90,27 @@ export function CardStack({
       const goRight = x.value > SWIPE_X || e.velocityX > 900;
       const goLeft = x.value < -SWIPE_X || e.velocityX < -900;
       const goUp = y.value < -SWIPE_UP || e.velocityY < -900;
+      // Ease-out fling; advance only AFTER the card has fully flown off so it's actually seen.
+      const fly = { duration: 340, easing: Easing.out(Easing.cubic) };
+      const done = (finished?: boolean) => {
+        'worklet';
+        if (finished) runOnJS(advance)();
+      };
 
       if (goUp && topMovie) {
-        y.value = withTiming(-FLY, { duration: 260 });
-        x.value = withTiming(x.value, { duration: 260 });
         runOnJS(fire)('up', topMovie);
-        runOnJS(advance)();
+        y.value = withTiming(-FLY, fly, done);
       } else if (goRight && topMovie) {
-        x.value = withTiming(FLY, { duration: 260 });
         runOnJS(fire)('right', topMovie);
-        runOnJS(advance)();
+        y.value = withTiming(y.value + 90, fly); // gentle downward arc
+        x.value = withTiming(FLY, fly, done);
       } else if (goLeft && topMovie) {
-        x.value = withTiming(-FLY, { duration: 260 });
         runOnJS(fire)('left', topMovie);
-        runOnJS(advance)();
+        y.value = withTiming(y.value + 90, fly);
+        x.value = withTiming(-FLY, fly, done);
       } else {
-        x.value = withSpring(0);
-        y.value = withSpring(0);
+        x.value = withSpring(0, { damping: 14, stiffness: 200, mass: 0.7 });
+        y.value = withSpring(0, { damping: 14, stiffness: 200, mass: 0.7 });
       }
     });
 
@@ -115,7 +120,8 @@ export function CardStack({
     transform: [
       { translateX: x.value },
       { translateY: y.value },
-      { rotate: `${interpolate(x.value, [-SCREEN_W, SCREEN_W], [-14, 14], 'clamp')}deg` },
+      { rotate: `${interpolate(x.value, [-SCREEN_W, SCREEN_W], [-16, 16], 'clamp')}deg` },
+      { scale: interpolate(progress.value, [0, 1], [1, 1.03], 'clamp') },
     ],
   }));
 

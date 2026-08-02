@@ -65,6 +65,7 @@ export type MovieDetail = MovieLite & {
   recommendations: MovieLite[]; // recommendations.results
   watchProviders: WatchProvider[]; // watch/providers flatrate for region
   backdrop: string | null; // backdrop_path
+  backdrops: string[]; // images.backdrops file_paths (for hero carousel)
 };
 
 /** Kept broad for wrapping alias — the app's canonical movie is MovieDetail. */
@@ -124,6 +125,9 @@ export type TMDBMovieDetailRaw = {
       type: string;
       official: boolean;
     }[];
+  };
+  images?: {
+    backdrops?: { file_path: string }[];
   };
   recommendations?: TMDBPaged<TMDBMovieResult>;
   'watch/providers'?: {

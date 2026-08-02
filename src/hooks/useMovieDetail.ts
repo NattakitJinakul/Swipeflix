@@ -42,6 +42,7 @@ export type UseMovieDetail = {
   providers: WatchProvider[];
   recommendations: MovieLite[];
   runtimeLabel: string | null;
+  backdrops: string[];
   reload: () => void;
 };
 
@@ -107,6 +108,7 @@ export function useMovieDetail(id: number | null): UseMovieDetail {
     providers: detail?.watchProviders ?? [],
     recommendations: detail?.recommendations ?? [],
     runtimeLabel,
+    backdrops: detail?.backdrops ?? [],
     reload,
   };
 }

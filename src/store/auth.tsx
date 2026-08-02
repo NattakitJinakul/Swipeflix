@@ -37,6 +37,14 @@ export type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Resolve `p` but never wait longer than `ms` — returns `fallback` on timeout or error. */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    p.catch(() => fallback),
+    new Promise<T>((res) => setTimeout(() => res(fallback), ms)),
+  ]);
+}
+
 async function loadProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
   if (!snap.exists()) return null;
@@ -63,14 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsub = observeAuth(async (u) => {
       setUser(u);
       if (u) {
-        try {
-          const [prof, pl] = await Promise.all([loadProfile(u.uid), loadPlan(u.uid)]);
-          setProfile(prof);
-          setPlan(pl);
-        } catch {
-          setProfile(null);
-          setPlan('free');
-        }
+        // Timeout-guarded so a slow/unconfigured Firestore never freezes the auth gate.
+        const [prof, pl] = await Promise.all([
+          withTimeout(loadProfile(u.uid), 5000, null),
+          withTimeout(loadPlan(u.uid), 5000, 'free' as Plan),
+        ]);
+        setProfile(prof);
+        setPlan(pl);
       } else {
         setProfile(null);
         setPlan('free');
@@ -86,10 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(
     async (email: string, password: string, displayName: string) => {
-      const u = await signUpEmail(email, password, displayName);
-      const [prof, pl] = await Promise.all([loadProfile(u.uid), loadPlan(u.uid)]);
-      setProfile(prof);
-      setPlan(pl);
+      // Resolve as soon as the auth account exists; observeAuth loads profile/plan.
+      await signUpEmail(email, password, displayName);
     },
     []
   );
@@ -99,10 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const googleSignIn = useCallback(async (idToken: string) => {
-    const u = await googleCredential(idToken);
-    const [prof, pl] = await Promise.all([loadProfile(u.uid), loadPlan(u.uid)]);
-    setProfile(prof);
-    setPlan(pl);
+    await googleCredential(idToken);
   }, []);
 
   const value = useMemo<AuthContextValue>(

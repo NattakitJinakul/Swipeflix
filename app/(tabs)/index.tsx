@@ -12,6 +12,7 @@ import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ActionButton, ACTION_COLORS, ACTION_ICONS } from '@/components/ActionButton';
 import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
 import { GenreChip } from '@/components/GenreChip';
@@ -141,6 +142,7 @@ export default function SwipeScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.hScroll}
         contentContainerStyle={styles.sourceRow}
       >
         {SOURCES.map((s) => (
@@ -165,6 +167,7 @@ export default function SwipeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.hScroll}
             contentContainerStyle={styles.filterRow}
           >
             {GENRE_ENTRIES.map((g) => (
@@ -179,6 +182,7 @@ export default function SwipeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.hScroll}
             contentContainerStyle={styles.filterRow}
           >
             {RATING_STEPS.map((r) => (
@@ -243,33 +247,28 @@ export default function SwipeScreen() {
         )}
       </View>
 
-      {/* Action buttons */}
+      {/* Action buttons (below card) */}
       {allowed && !deck.error && !deckEmpty ? (
-        <View style={[styles.actions, { paddingBottom: insets.bottom + 8 }]}>
-          <RoundButton
-            icon="close"
-            color={c.dislike}
-            bg={c.surface}
+        <View style={styles.actions}>
+          <ActionButton
+            icon={ACTION_ICONS.dislike}
+            color={ACTION_COLORS.dislike}
             onPress={() => deck.current && handleDislike(deck.current.id)}
           />
-          <RoundButton
-            icon="eye"
-            color={c.watched}
-            bg={c.surface}
-            small
+          <ActionButton
+            icon={ACTION_ICONS.watched}
+            color={ACTION_COLORS.watched}
             onPress={() => deck.current && handleWatched(deck.current)}
           />
-          <RoundButton
-            icon="heart"
-            color={c.like}
-            bg={c.surface}
+          <ActionButton
+            icon={ACTION_ICONS.like}
+            color={ACTION_COLORS.like}
             onPress={() => deck.current && handleLike(deck.current)}
           />
-          <RoundButton
-            icon="arrow-undo"
-            color={canUndoDeck ? c.text : c.muted}
-            bg={c.surface}
-            small
+          <ActionButton
+            icon={ACTION_ICONS.undo}
+            color={ACTION_COLORS.undo}
+            disabled={!canUndoDeck}
             onPress={handleUndo}
           />
         </View>
@@ -306,38 +305,6 @@ function IconButton({
   );
 }
 
-function RoundButton({
-  icon,
-  color,
-  bg,
-  onPress,
-  small,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  color: string;
-  bg: string;
-  onPress: () => void;
-  small?: boolean;
-}) {
-  const size = small ? 52 : 64;
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.roundBtn,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: bg,
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
-    >
-      <Ionicons name={icon} size={small ? 24 : 30} color={color} />
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -349,27 +316,20 @@ const styles = StyleSheet.create({
   },
   brand: { fontSize: 24, fontWeight: '900', letterSpacing: 0.5 },
   topActions: { flexDirection: 'row', gap: 18 },
-  sourceRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  sourceChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
+  hScroll: { flexGrow: 0, flexShrink: 0 },
+  sourceRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, alignItems: 'center' },
+  sourceChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, alignSelf: 'center' },
   sourceText: { fontSize: 13, fontWeight: '700' },
   filters: { gap: 8, paddingBottom: 6 },
-  filterRow: { paddingHorizontal: 16, gap: 8 },
-  miniChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999 },
+  filterRow: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
+  miniChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, alignSelf: 'center' },
   deckArea: { flex: 1, marginHorizontal: 4 },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 18,
-    paddingTop: 12,
-  },
-  roundBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    gap: 24,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
 });

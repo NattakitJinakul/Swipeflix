@@ -71,27 +71,34 @@ function RootNavigator() {
     <Stack>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="movie/[id]" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );
 }
 
-export default function RootLayout() {
+// Reads the (settings-aware) color scheme — must live INSIDE SettingsProvider.
+function ThemedRoot() {
   const colorScheme = useColorScheme();
+  return (
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <RootNavigator />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+    </ThemeProvider>
+  );
+}
 
+export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <SettingsProvider>
-            <LibraryProvider>
-              <RootNavigator />
-              <StatusBar style="auto" />
-            </LibraryProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <SettingsProvider>
+          <LibraryProvider>
+            <ThemedRoot />
+          </LibraryProvider>
+        </SettingsProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }

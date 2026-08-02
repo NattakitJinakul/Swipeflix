@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -60,7 +61,7 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flex}
       >
-        <View style={styles.container}>
+        <Pressable style={styles.container} onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.brand}>
             <Text style={[styles.logo, { color: c.primary }]}>SWIPEFLIX</Text>
             <Text style={[styles.tagline, { color: c.muted }]}>คืนนี้ดูอะไรดี</Text>
@@ -124,7 +125,7 @@ export default function LoginScreen() {
               สมัครสมาชิก
             </Link>
           </View>
-        </View>
+        </Pressable>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

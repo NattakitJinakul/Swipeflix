@@ -55,7 +55,9 @@ export async function signUpEmail(
 ): Promise<User> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   if (displayName) await updateProfile(cred.user, { displayName });
-  await ensureUserDoc(cred.user, displayName);
+  // Fire-and-forget: don't block the sign-up flow on a Firestore write (which can hang
+  // if the DB isn't reachable / rules pending). The doc is seeded in the background.
+  ensureUserDoc(cred.user, displayName).catch((e) => console.warn('[auth] ensureUserDoc failed', e));
   return cred.user;
 }
 
@@ -76,6 +78,6 @@ export function observeAuth(cb: (user: User | null) => void): () => void {
 export async function googleCredential(idToken: string): Promise<User> {
   const credential = GoogleAuthProvider.credential(idToken);
   const cred = await signInWithCredential(auth, credential);
-  await ensureUserDoc(cred.user);
+  ensureUserDoc(cred.user).catch((e) => console.warn('[auth] ensureUserDoc failed', e));
   return cred.user;
 }

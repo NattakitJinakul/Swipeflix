@@ -5,11 +5,14 @@
  * recommendations row, add-to-watchlist + Share. See docs/02 · docs/04 · docs/05 · docs/11.
  */
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   Pressable,
   ScrollView,
   Share,
@@ -17,9 +20,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import YoutubePlayer from 'react-native-youtube-iframe';
 
+import { ActionButton, ACTION_COLORS, ACTION_ICONS } from '@/components/ActionButton';
 import { EmptyState } from '@/components/EmptyState';
 import { LangBadge } from '@/components/LangBadge';
 import { posterUri } from '@/components/tmdb-image';
@@ -30,6 +35,8 @@ import { useLibrary } from '@/src/store/library';
 import type { MovieLite } from '@/src/types/movie';
 import { affiliateUrl } from '@/src/utils/affiliate';
 
+const { width: SCREEN_W } = Dimensions.get('window');
+
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const movieId = Number(id);
@@ -37,11 +44,30 @@ export default function MovieDetailScreen() {
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
 
-  const { detail, loading, error, overview, overviewFallback, director, cast, trailerKey, providers, recommendations, runtimeLabel } =
+  const { detail, loading, error, overview, overviewFallback, director, cast, trailerKey, providers, recommendations, runtimeLabel, backdrops } =
     useMovieDetail(Number.isFinite(movieId) ? movieId : null);
-  const { liked, like } = useLibrary();
+  const { liked, like, dislike, markWatched } = useLibrary();
+  const [heroIdx, setHeroIdx] = useState(0);
+
+  // Fade the floating decision bar out while scrolling, back in when it settles.
+  const barOpacity = useSharedValue(1);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const barStyle = useAnimatedStyle(() => ({ opacity: barOpacity.value }));
+  const onScrollActivity = () => {
+    barOpacity.value = withTiming(0, { duration: 140 });
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      barOpacity.value = withTiming(1, { duration: 260 });
+    }, 450);
+  };
 
   const inWatchlist = detail ? liked.some((m) => m.id === detail.id) : false;
+
+  const act = (fn: () => void) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    fn();
+    router.back();
+  };
 
   const onShare = () => {
     if (!detail) return;
@@ -78,7 +104,13 @@ export default function MovieDetailScreen() {
     );
   }
 
-  const backdropUri = posterUri(detail.backdrop, 'w780') ?? posterUri(detail.poster, 'w780');
+  const heroUris = (backdrops.length ? backdrops : detail.backdrop ? [detail.backdrop] : [])
+    .map((p) => posterUri(p, 'w780'))
+    .filter((u): u is string => !!u);
+  if (!heroUris.length) {
+    const fallback = posterUri(detail.poster, 'w780');
+    if (fallback) heroUris.push(fallback);
+  }
   const posterSmall = posterUri(detail.poster, 'w342');
 
   return (
@@ -91,18 +123,48 @@ export default function MovieDetailScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 104 }}
+        onScroll={onScrollActivity}
+        scrollEventThrottle={16}
       >
-        {/* Backdrop */}
+        {/* Hero: swipeable backdrop gallery */}
         <View style={styles.backdropWrap}>
-          {backdropUri ? (
-            <Image source={{ uri: backdropUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) =>
+              setHeroIdx(Math.round(e.nativeEvent.contentOffset.x / SCREEN_W))
+            }
+          >
+            {heroUris.map((uri, i) => (
+              <Image
+                key={`${uri}-${i}`}
+                source={{ uri }}
+                style={{ width: SCREEN_W, height: BACKDROP_H }}
+                contentFit="cover"
+                transition={200}
+              />
+            ))}
+          </ScrollView>
+          <View style={[StyleSheet.absoluteFill, styles.backdropScrim, { backgroundColor: c.background }]} pointerEvents="none" />
+          {heroUris.length > 1 ? (
+            <View style={styles.dots} pointerEvents="none">
+              {heroUris.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    { backgroundColor: i === heroIdx ? '#fff' : 'rgba(255,255,255,0.4)', width: i === heroIdx ? 18 : 6 },
+                  ]}
+                />
+              ))}
+            </View>
           ) : null}
-          <View style={[StyleSheet.absoluteFill, styles.backdropScrim, { backgroundColor: c.background }]} />
         </View>
 
         {/* Header: poster + title block */}
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, { marginTop: -60 }]}>
           <View style={[styles.posterBox, { backgroundColor: c.surface }]}>
             {posterSmall ? (
               <Image source={{ uri: posterSmall }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
@@ -262,6 +324,13 @@ export default function MovieDetailScreen() {
           </Section>
         ) : null}
       </ScrollView>
+
+      {/* Floating decision bar (fades while scrolling) */}
+      <Animated.View style={[styles.floatBar, barStyle, { bottom: insets.bottom + 2 }]} pointerEvents="box-none">
+        <ActionButton icon={ACTION_ICONS.dislike} color={ACTION_COLORS.dislike} size={54} onPress={() => act(() => dislike(detail.id))} />
+        <ActionButton icon={ACTION_ICONS.watched} color={ACTION_COLORS.watched} size={54} onPress={() => act(() => markWatched(detail))} />
+        <ActionButton icon={ACTION_ICONS.like} color={ACTION_COLORS.like} size={62} onPress={() => act(() => like(detail))} />
+      </Animated.View>
     </View>
   );
 }
@@ -287,6 +356,15 @@ const BACKDROP_H = 240;
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  floatBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+  },
   topControls: {
     position: 'absolute',
     left: 12,
@@ -305,7 +383,15 @@ const styles = StyleSheet.create({
   },
   backdropWrap: { height: BACKDROP_H, width: '100%' },
   backdropScrim: { opacity: 0.35 },
-  headerRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: -60, gap: 14 },
+  dots: {
+    position: 'absolute',
+    bottom: 70,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    gap: 5,
+  },
+  dot: { height: 6, borderRadius: 3 },
+  headerRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 14 },
   posterBox: {
     width: 110,
     height: 165,
