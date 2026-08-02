@@ -17,6 +17,10 @@ export const en = {
   },
   tabs: { swipe: 'Swipe', discover: 'Discover', play: 'Play', watchlist: 'Library', profile: 'Profile', community: 'Community' },
   swipe: {
+    dislike: 'Dislike',
+    played: 'Played',
+    like: 'Like',
+    undo: 'Undo',
     sourcePopular: 'Popular',
     sourceNew: 'New',
     sourceTopRated: 'Top rated',

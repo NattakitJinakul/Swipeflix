@@ -12,3 +12,7 @@ Performance optimizations: OFF. @ http://localhost:8082/node_modules/expo-router
 [    1409ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.igdb.com/v4/games:0
 [    1416ms] [ERROR] Access to fetch at 'https://api.igdb.com/v4/games' from origin 'http://localhost:8082' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:8082/:0
 [    1416ms] [ERROR] Failed to load resource: net::ERR_FAILED @ https://api.igdb.com/v4/games:0
+[   66175ms] [WARNING] Disconnected from Metro (1006)
+To reconnect:
+- Ensure that Metro is running and available on the same network
+- Reload this app (will trigger further help if Metro cannot be connected to) @ http://localhost:8082/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.routerRoot=app&transform.reactCompiler=true:53828

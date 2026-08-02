@@ -298,27 +298,39 @@ export default function SwipeScreen() {
       {/* Action buttons (below card) */}
       {!deck.error && !deckEmpty ? (
         <View style={styles.actions}>
-          <ActionButton
-            icon="thumbs-down"
-            color={ACTION_COLORS.dislike}
-            onPress={() => deck.current && handleDislike(deck.current.id)}
-          />
-          <ActionButton
-            icon="game-controller"
-            color={ACTION_COLORS.watched}
-            onPress={() => deck.current && handlePlayed(deck.current)}
-          />
-          <ActionButton
-            icon="heart"
-            color={ACTION_COLORS.like}
-            onPress={() => deck.current && handleLike(deck.current)}
-          />
-          <ActionButton
-            icon="arrow-undo"
-            color={ACTION_COLORS.undo}
-            disabled={!canUndoDeck}
-            onPress={handleUndo}
-          />
+          <View style={styles.actionCol}>
+            <ActionButton
+              icon="thumbs-down"
+              color={ACTION_COLORS.dislike}
+              onPress={() => deck.current && handleDislike(deck.current.id)}
+            />
+            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.dislike')}</Text>
+          </View>
+          <View style={styles.actionCol}>
+            <ActionButton
+              icon="checkmark-done"
+              color={ACTION_COLORS.watched}
+              onPress={() => deck.current && handlePlayed(deck.current)}
+            />
+            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.played')}</Text>
+          </View>
+          <View style={styles.actionCol}>
+            <ActionButton
+              icon="heart"
+              color={ACTION_COLORS.like}
+              onPress={() => deck.current && handleLike(deck.current)}
+            />
+            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.like')}</Text>
+          </View>
+          <View style={styles.actionCol}>
+            <ActionButton
+              icon="arrow-undo"
+              color={ACTION_COLORS.undo}
+              disabled={!canUndoDeck}
+              onPress={handleUndo}
+            />
+            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.undo')}</Text>
+          </View>
         </View>
       ) : null}
 
@@ -388,11 +400,13 @@ const styles = StyleSheet.create({
   filterRow: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   miniChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, alignSelf: 'center' },
   deckArea: { flex: 1, marginHorizontal: 4 },
+  actionCol: { alignItems: 'center', gap: 6 },
+  actionLabel: { fontSize: 12, fontWeight: '700' },
   actions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 24,
+    gap: 20,
     paddingTop: 16,
     paddingBottom: 8,
   },

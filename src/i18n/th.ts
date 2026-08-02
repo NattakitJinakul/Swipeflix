@@ -17,6 +17,10 @@ export const th = {
   },
   tabs: { swipe: 'ปัด', discover: 'ค้นหา', play: 'สนุก', watchlist: 'รายการ', profile: 'โปรไฟล์', community: 'คอมมูนิตี้' },
   swipe: {
+    dislike: 'ไม่ชอบ',
+    played: 'เคยเล่น',
+    like: 'ชอบ',
+    undo: 'ย้อนกลับ',
     sourcePopular: 'ยอดนิยม',
     sourceNew: 'ใหม่',
     sourceTopRated: 'คะแนนสูง',

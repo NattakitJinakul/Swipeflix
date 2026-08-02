@@ -412,7 +412,7 @@ export default function GameDetailScreen() {
       {/* Floating decision bar (fades while scrolling) */}
       <Animated.View style={[styles.floatBar, barStyle, { bottom: insets.bottom + 2 }]} pointerEvents="box-none">
         <ActionButton icon="thumbs-down" color={ACTION_COLORS.dislike} size={54} onPress={skip} />
-        <ActionButton icon="game-controller" color={ACTION_COLORS.watched} size={54} onPress={() => save(() => markPlayed(detail))} />
+        <ActionButton icon="checkmark-done" color={ACTION_COLORS.watched} size={54} onPress={() => save(() => markPlayed(detail))} />
         <ActionButton icon="heart" color={ACTION_COLORS.like} size={62} onPress={() => save(() => like(detail))} />
       </Animated.View>
     </View>
