@@ -125,22 +125,22 @@ export function SwipeCard({
         ) : null}
       </View>
 
-      {/* swipe overlays — filled badges */}
+      {/* swipe overlays — premium stamps (colored neon glow + bold outline) */}
       <Animated.View style={[styles.overlay, styles.overlayLeft, likeStyle]} pointerEvents="none">
-        <View style={[styles.badge, { backgroundColor: c.like }]}>
-          <Ionicons name="heart" size={22} color="#fff" />
+        <View style={[styles.badge, { backgroundColor: c.like, shadowColor: c.like }]}>
+          <Ionicons name="heart" size={26} color="#fff" />
           <Text style={styles.badgeText}>ชอบ</Text>
         </View>
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayRight, nopeStyle]} pointerEvents="none">
-        <View style={[styles.badge, { backgroundColor: c.dislike }]}>
-          <Ionicons name="thumbs-down" size={22} color="#fff" />
+        <View style={[styles.badge, { backgroundColor: c.dislike, shadowColor: c.dislike }]}>
+          <Ionicons name="thumbs-down" size={26} color="#fff" />
           <Text style={styles.badgeText}>ไม่ชอบ</Text>
         </View>
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayTop, seenStyle]} pointerEvents="none">
-        <View style={[styles.badge, { backgroundColor: c.watched }]}>
-          <Ionicons name="game-controller" size={22} color="#fff" />
+        <View style={[styles.badge, { backgroundColor: c.watched, shadowColor: c.watched }]}>
+          <Ionicons name="game-controller" size={26} color="#fff" />
           <Text style={styles.badgeText}>เคยเล่น</Text>
         </View>
       </Animated.View>
@@ -209,17 +209,17 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.9)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    gap: 9,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+    borderRadius: 16,
+    borderWidth: 4,
+    borderColor: '#fff',
+    // Colored neon glow (shadowColor set per-badge to its own color) reads instantly on any cover.
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.95,
+    shadowRadius: 14,
+    elevation: 14,
   },
-  badgeText: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 1 },
+  badgeText: { color: '#fff', fontSize: 27, fontWeight: '900', letterSpacing: 1.5 },
 });

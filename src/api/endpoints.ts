@@ -99,6 +99,41 @@ export async function searchGames(query: string): Promise<GameLite[]> {
   return (Array.isArray(raw) ? raw : []).map(toGameLite);
 }
 
+// ---- Mini-games (สนุก tab) ----
+
+/** A well-known game with playable screenshots — used by the "เกมอะไรเอ่ย?" guess game. */
+export type GuessGame = { id: number; name: string; screenshots: string[] };
+
+/** ~40 famous games that have screenshots, for the guessing game. */
+export async function guessGames(): Promise<GuessGame[]> {
+  const body =
+    'fields name, screenshots.url; ' +
+    'where screenshots != null & rating_count > 80 & cover != null; ' +
+    'sort rating_count desc; limit 40;';
+  const raw = await igdb<(IgdbGame & { screenshots?: IgdbImageRefLite[] })[]>('/games', body);
+  return (Array.isArray(raw) ? raw : [])
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      screenshots: (r.screenshots ?? [])
+        .map((s) => igdbImage(s.url, 't_screenshot_big'))
+        .filter((u): u is string => !!u),
+    }))
+    .filter((g) => g.screenshots.length > 0);
+}
+
+type IgdbImageRefLite = { id?: number; url: string };
+
+/** ~40 popular games (cover + rating) for the "VS ตัวต่อตัว" head-to-head. */
+export async function versusGames(): Promise<GameLite[]> {
+  const body =
+    'fields name, cover.url, rating, rating_count, genres.name, platforms.name, first_release_date; ' +
+    'where cover != null & rating_count > 60; ' +
+    'sort rating_count desc; limit 40;';
+  const raw = await igdb<IgdbGame[]>('/games', body);
+  return (Array.isArray(raw) ? raw : []).map(toGameLite).filter((g) => !!g.image);
+}
+
 // ---- Detail ----
 
 export async function gameDetail(id: number): Promise<GameDetail> {

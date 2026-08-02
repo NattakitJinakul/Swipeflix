@@ -21,6 +21,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 const TABS: Record<string, { outline: IoniconName; filled: IoniconName; label: string }> = {
   index: { outline: 'flame-outline', filled: 'flame', label: 'ปัด' },
   discover: { outline: 'search-outline', filled: 'search', label: 'ค้นหา' },
+  play: { outline: 'game-controller-outline', filled: 'game-controller', label: 'สนุก' },
   watchlist: { outline: 'bookmark-outline', filled: 'bookmark', label: 'รายการ' },
   profile: { outline: 'person-outline', filled: 'person', label: 'โปรไฟล์' },
 };

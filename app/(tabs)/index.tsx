@@ -6,24 +6,36 @@
  * swipe quota gate applies only to signed-in users.
  */
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
+import { gameImage } from '@/components/game-image';
 import { GenreChip } from '@/components/GenreChip';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { popularGames } from '@/src/api/endpoints';
 import { useDeck, type DeckSource } from '@/src/hooks/useDeck';
 import { useAuth } from '@/src/store/auth';
 import { useLibrary } from '@/src/store/library';
 import type { GameLite } from '@/src/types/game';
 import { CATEGORIES, categoryLabel } from '@/src/utils/genres';
+
+// A like on a game rated this high (IGDB 0-100) triggers the full-screen MATCH celebration.
+const MATCH_RATING = 85;
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -54,6 +66,42 @@ export default function SwipeScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [burst, setBurst] = useState(0);
 
+  // เกมแห่งวัน — deterministic pick from the popular list, stable for the calendar day.
+  const [daily, setDaily] = useState<GameLite | null>(null);
+  useEffect(() => {
+    let active = true;
+    popularGames(1)
+      .then((paged) => {
+        const list = paged.results;
+        if (!active || !list.length) return;
+        setDaily(list[new Date().getDate() % list.length]);
+      })
+      .catch(() => {}); // hide banner on error
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // MATCH celebration overlay (high-rated like). Driven by state + a Reanimated fade/scale.
+  const [match, setMatch] = useState<GameLite | null>(null);
+  const matchAnim = useSharedValue(0);
+  const matchStyle = useAnimatedStyle(() => ({
+    opacity: matchAnim.value,
+    transform: [{ scale: interpolate(matchAnim.value, [0, 1], [0.85, 1]) }],
+  }));
+  const celebrate = useCallback(
+    (game: GameLite) => {
+      setMatch(game);
+      setBurst((b) => b + 1);
+      matchAnim.value = withTiming(1, { duration: 220 });
+      setTimeout(() => {
+        matchAnim.value = withTiming(0, { duration: 240 });
+      }, 1000);
+      setTimeout(() => setMatch(null), 1300);
+    },
+    [matchAnim],
+  );
+
   const bump = useCallback(() => setSwipeCount((n) => n + 1), []);
 
   // Guest save prompt — like/played require login. Returns true when the action must be blocked.
@@ -74,11 +122,13 @@ export default function SwipeScreen() {
       }
       like(game, 'deck');
       bump();
-      setBurst((b) => b + 1);
+      // High-rated like -> full-screen MATCH celebration; otherwise the small confetti burst.
+      if (game.rating != null && game.rating >= MATCH_RATING) celebrate(game);
+      else setBurst((b) => b + 1);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       deck.advance();
     },
-    [promptLogin, like, bump, deck],
+    [promptLogin, like, bump, celebrate, deck],
   );
   const handleDislike = useCallback(
     (id: number) => {
@@ -146,6 +196,38 @@ export default function SwipeScreen() {
           />
         </View>
       </View>
+
+      {/* เกมแห่งวัน — daily featured banner (tap -> detail) */}
+      {daily ? (
+        <Pressable
+          onPress={() => router.push(`/game/${daily.id}`)}
+          style={({ pressed }) => [
+            styles.daily,
+            { backgroundColor: c.surface, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          {gameImage(daily.image) ? (
+            <Image source={{ uri: gameImage(daily.image)! }} style={styles.dailyThumb} contentFit="cover" />
+          ) : (
+            <View style={[styles.dailyThumb, styles.dailyThumbFallback, { backgroundColor: c.background }]}>
+              <Ionicons name="game-controller" size={18} color={c.muted} />
+            </View>
+          )}
+          <View style={styles.dailyInfo}>
+            <Text style={[styles.dailyLabel, { color: c.primary }]}>⭐ เกมแห่งวัน</Text>
+            <Text style={[styles.dailyName, { color: c.text }]} numberOfLines={1}>
+              {daily.name}
+            </Text>
+          </View>
+          {daily.rating != null ? (
+            <View style={styles.dailyRating}>
+              <Ionicons name="star" size={12} color="#F5C518" />
+              <Text style={[styles.dailyRatingText, { color: c.text }]}>{Math.round(daily.rating)}</Text>
+            </View>
+          ) : null}
+          <Ionicons name="chevron-forward" size={18} color={c.muted} />
+        </Pressable>
+      ) : null}
 
       {/* Source toggle */}
       <ScrollView
@@ -257,6 +339,23 @@ export default function SwipeScreen() {
         </View>
       ) : null}
 
+      {/* MATCH! celebration overlay (high-rated like) */}
+      {match ? (
+        <Animated.View style={[styles.matchOverlay, matchStyle]} pointerEvents="none">
+          <Text style={styles.matchTitle}>MATCH!</Text>
+          {gameImage(match.image) ? (
+            <Image source={{ uri: gameImage(match.image)! }} style={styles.matchCover} contentFit="cover" />
+          ) : (
+            <View style={[styles.matchCover, styles.matchCoverFallback]}>
+              <Ionicons name="game-controller" size={56} color="#fff" />
+            </View>
+          )}
+          <Text style={styles.matchName} numberOfLines={2}>
+            {match.name}
+          </Text>
+        </Animated.View>
+      ) : null}
+
       {burst > 0 ? (
         <ConfettiCannon
           key={burst}
@@ -318,5 +417,55 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingTop: 16,
     paddingBottom: 8,
+  },
+  // เกมแห่งวัน banner
+  daily: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 10,
+    padding: 8,
+    borderRadius: 14,
+  },
+  dailyThumb: { width: 44, height: 44, borderRadius: 8 },
+  dailyThumbFallback: { alignItems: 'center', justifyContent: 'center' },
+  dailyInfo: { flex: 1, gap: 1 },
+  dailyLabel: { fontSize: 11, fontWeight: '800' },
+  dailyName: { fontSize: 14, fontWeight: '700' },
+  dailyRating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  dailyRatingText: { fontSize: 13, fontWeight: '800' },
+  // MATCH! overlay
+  matchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    backgroundColor: 'rgba(0,0,0,0.82)',
+  },
+  matchTitle: {
+    color: '#fff',
+    fontSize: 52,
+    fontWeight: '900',
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 10,
+  },
+  matchCover: {
+    width: 180,
+    height: 240,
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  matchCoverFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#222' },
+  matchName: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginHorizontal: 32,
   },
 });
