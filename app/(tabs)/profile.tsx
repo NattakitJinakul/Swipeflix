@@ -7,7 +7,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/Avatar';
@@ -29,7 +29,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
 
-  const { user, profile, isGuest, updateProfile, signOut } = useAuth();
+  const { user, profile, isGuest, updateProfile } = useAuth();
   const { liked, played } = useLibrary();
 
   const dna = useMemo(() => computeDNA(liked, played), [liked, played]);
@@ -142,19 +142,6 @@ export default function ProfileScreen() {
             <Text style={[styles.actionBtnOutlineText, { color: c.text }]}>{t('profile.settings')}</Text>
           </Pressable>
         </View>
-
-        <Pressable
-          onPress={() =>
-            Alert.alert(t('account.signOutConfirm'), t('account.signOutConfirmBody'), [
-              { text: t('common.cancel'), style: 'cancel' },
-              { text: t('common.signOut'), style: 'destructive', onPress: () => void signOut().catch(() => {}) },
-            ])
-          }
-          style={({ pressed }) => [styles.signOutRow, { opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons name="log-out-outline" size={18} color={c.dislike} />
-          <Text style={[styles.signOutText, { color: c.dislike }]}>{t('common.signOut')}</Text>
-        </Pressable>
       </View>
 
       {statRow}
@@ -313,8 +300,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   actionBtnOutlineText: { fontWeight: '700', fontSize: 14 },
-  signOutRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14, paddingVertical: 10 },
-  signOutText: { fontWeight: '800', fontSize: 15 },
   statRow: { flexDirection: 'row', gap: 12 },
   emptyWrap: { minHeight: 280 },
   section: { gap: 12 },

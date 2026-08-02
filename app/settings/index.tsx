@@ -13,6 +13,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFirstRun } from '@/src/hooks/useFirstRun';
 import { useT } from '@/src/i18n';
+import { useAuth } from '@/src/store/auth';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -22,6 +23,13 @@ export default function SettingsIndex() {
   const router = useRouter();
   const t = useT();
   const tutorial = useFirstRun(TUTORIAL_KEY);
+  const { isGuest, signOut } = useAuth();
+
+  const confirmSignOut = () =>
+    Alert.alert(t('account.signOutConfirm'), t('account.signOutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.signOut'), style: 'destructive', onPress: () => void signOut().catch(() => {}) },
+    ]);
 
   const [notifyNew, setNotifyNew] = useState(false);
   const [hideAdult, setHideAdult] = useState(true);
@@ -67,6 +75,16 @@ export default function SettingsIndex() {
       <Group title={t('settings.groupAbout')} color={c.muted}>
         <NavRow c={c} icon="information-circle-outline" label={t('settings.rowAbout')} onPress={() => router.push('/settings/about')} last />
       </Group>
+
+      {!isGuest ? (
+        <Pressable
+          onPress={confirmSignOut}
+          style={({ pressed }) => [styles.signOut, { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name="log-out-outline" size={20} color={c.dislike} />
+          <Text style={[styles.signOutText, { color: c.dislike }]}>{t('common.signOut')}</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -161,6 +179,16 @@ function ToggleRow({
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 22 },
+  signOut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: 14,
+    marginTop: 4,
+  },
+  signOutText: { fontSize: 15, fontWeight: '800' },
   group: { gap: 8 },
   groupTitle: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, paddingHorizontal: 4 },
   groupBody: { borderRadius: 14, overflow: 'hidden' },
