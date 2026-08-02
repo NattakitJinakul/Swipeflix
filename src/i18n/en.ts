@@ -60,6 +60,7 @@ export const en = {
     loadFailSub: 'Please try again',
     gameOfDay: 'Game of the Day',
     anticipated: 'Most Anticipated',
+    popular: 'Popular',
     reviews: 'Recent Reviews',
     days: 'Days',
     hours: 'Hours',

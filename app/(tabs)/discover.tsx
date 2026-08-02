@@ -26,7 +26,7 @@ import { PosterGrid } from '@/components/PosterGrid';
 import { ReviewCard } from '@/components/ReviewCard';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { gameOfDay, recentReviews, upcomingGames } from '@/src/api/endpoints';
+import { gameOfDay, popularGames, recentReviews, upcomingGames } from '@/src/api/endpoints';
 import { useSearch } from '@/src/hooks/useSearch';
 import { useT } from '@/src/i18n';
 import type { GameLite, ReviewGame, UpcomingGame } from '@/src/types/game';
@@ -49,6 +49,7 @@ export default function DiscoverScreen() {
   const searching = query.trim().length > 0;
 
   const [gotd, setGotd] = useState<GameLite | null>(null);
+  const [popular, setPopular] = useState<GameLite[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingGame[]>([]);
   const [reviews, setReviews] = useState<ReviewGame[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
@@ -58,12 +59,14 @@ export default function DiscoverScreen() {
     setFeedLoading(true);
     Promise.all([
       gameOfDay().catch(() => null),
+      popularGames(0).then((p) => p.results).catch(() => [] as GameLite[]),
       upcomingGames().catch(() => [] as UpcomingGame[]),
       recentReviews().catch(() => [] as ReviewGame[]),
     ])
-      .then(([g, u, r]) => {
+      .then(([g, p, u, r]) => {
         if (!active) return;
         setGotd(g);
+        setPopular(p);
         setUpcoming(u);
         setReviews(r);
       })
@@ -73,7 +76,7 @@ export default function DiscoverScreen() {
     };
   }, []);
 
-  const feedEmpty = !gotd && upcoming.length === 0 && reviews.length === 0;
+  const feedEmpty = !gotd && popular.length === 0 && upcoming.length === 0 && reviews.length === 0;
 
   return (
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top + 8 }]}>
@@ -150,6 +153,27 @@ export default function DiscoverScreen() {
               </View>
               <Ionicons name="chevron-forward" size={20} color={c.muted} />
             </Pressable>
+          ) : null}
+
+          {/* Popular — horizontal poster rail */}
+          {popular.length ? (
+            <>
+              <Text style={[styles.section, { color: c.text }]}>{t('discover.popular')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.railRow}>
+                {popular.slice(0, 12).map((g) => (
+                  <Pressable key={g.id} onPress={() => open(g.id)} style={styles.railCard}>
+                    {gameImage(g.image) ? (
+                      <Image source={{ uri: gameImage(g.image)! }} style={styles.railCover} contentFit="cover" transition={150} />
+                    ) : (
+                      <View style={[styles.railCover, styles.heroFallback, { backgroundColor: c.surface }]}>
+                        <Ionicons name="game-controller" size={22} color={c.muted} />
+                      </View>
+                    )}
+                    <Text style={[styles.railName, { color: c.text }]} numberOfLines={1}>{g.name}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </>
           ) : null}
 
           {/* Most Anticipated — countdown grid */}
@@ -256,6 +280,10 @@ const styles = StyleSheet.create({
   },
   heroCover: { width: 56, height: 74, borderRadius: 10 },
   heroFallback: { alignItems: 'center', justifyContent: 'center' },
+  railRow: { paddingHorizontal: HPAD, gap: 12 },
+  railCard: { width: 116 },
+  railCover: { width: 116, height: 155, borderRadius: 12, marginBottom: 6 },
+  railName: { fontSize: 13, fontWeight: '600' },
   heroBody: { flex: 1, gap: 3 },
   heroLabel: { fontSize: 12, fontWeight: '800' },
   heroName: { fontSize: 16, fontWeight: '800' },

@@ -251,43 +251,31 @@ export default function SwipeScreen() {
       {/* Action buttons (below card) — glowing buttons floating on the background */}
       {!deck.error && !deckEmpty ? (
         <View style={styles.actions}>
-          <View style={styles.actionCol}>
-            <ActionButton
-              size={62}
-              icon="thumbs-down"
-              color={ACTION_COLORS.dislike}
-              onPress={() => deck.current && handleDislike(deck.current.id)}
-            />
-            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.dislike')}</Text>
-          </View>
-          <View style={styles.actionCol}>
-            <ActionButton
-              size={54}
-              icon="checkmark-done"
-              color={ACTION_COLORS.watched}
-              onPress={() => deck.current && handlePlayed(deck.current)}
-            />
-            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.played')}</Text>
-          </View>
-          <View style={styles.actionCol}>
-            <ActionButton
-              size={70}
-              icon="heart"
-              color={ACTION_COLORS.like}
-              onPress={() => deck.current && handleLike(deck.current)}
-            />
-            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.like')}</Text>
-          </View>
-          <View style={styles.actionCol}>
-            <ActionButton
-              size={54}
-              icon="arrow-undo"
-              color={ACTION_COLORS.undo}
-              disabled={!canUndoDeck}
-              onPress={handleUndo}
-            />
-            <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.undo')}</Text>
-          </View>
+          <ActionButton
+            size={62}
+            icon="thumbs-down"
+            color={ACTION_COLORS.dislike}
+            onPress={() => deck.current && handleDislike(deck.current.id)}
+          />
+          <ActionButton
+            size={54}
+            icon="checkmark-done"
+            color={ACTION_COLORS.watched}
+            onPress={() => deck.current && handlePlayed(deck.current)}
+          />
+          <ActionButton
+            size={70}
+            icon="heart"
+            color={ACTION_COLORS.like}
+            onPress={() => deck.current && handleLike(deck.current)}
+          />
+          <ActionButton
+            size={54}
+            icon="arrow-undo"
+            color={ACTION_COLORS.undo}
+            disabled={!canUndoDeck}
+            onPress={handleUndo}
+          />
         </View>
       ) : null}
 

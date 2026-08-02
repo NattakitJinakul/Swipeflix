@@ -60,6 +60,7 @@ export const th = {
     loadFailSub: 'ลองใหม่อีกครั้ง',
     gameOfDay: 'เกมแห่งวัน',
     anticipated: 'เกมที่รอคอย',
+    popular: 'ยอดนิยม',
     reviews: 'รีวิวล่าสุด',
     days: 'วัน',
     hours: 'ชม.',
