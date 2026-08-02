@@ -73,7 +73,33 @@ export function SwipeTutorial({ onDone }: { onDone: () => void }) {
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onDone} statusBarTranslucent>
-      <View style={styles.scrim}>
+      <View style={styles.fill}>
+        {/* Dark mask with a transparent hole over the highlighted region (4 rects) */}
+        <View style={[styles.mask, { top: 0, left: 0, right: 0, height: step.region.top }]} />
+        <View
+          style={[
+            styles.mask,
+            { top: step.region.top + step.region.height, left: 0, right: 0, bottom: 0 },
+          ]}
+        />
+        <View
+          style={[
+            styles.mask,
+            { top: step.region.top, left: 0, width: step.region.left, height: step.region.height },
+          ]}
+        />
+        <View
+          style={[
+            styles.mask,
+            {
+              top: step.region.top,
+              left: step.region.left + step.region.width,
+              right: 0,
+              height: step.region.height,
+            },
+          ]}
+        />
+
         {/* Spotlight frame */}
         <Animated.View
           pointerEvents="none"
@@ -128,7 +154,8 @@ export function SwipeTutorial({ onDone }: { onDone: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.82)' },
+  fill: { flex: 1 },
+  mask: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.82)' },
   frame: {
     position: 'absolute',
     borderRadius: 24,
