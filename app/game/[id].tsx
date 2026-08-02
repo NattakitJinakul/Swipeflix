@@ -26,6 +26,7 @@ import { TrailerPlayer } from '@/components/TrailerPlayer';
 
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { EmptyState } from '@/components/EmptyState';
+import { ImageViewer } from '@/components/ImageViewer';
 import { SignInPrompt } from '@/components/SignInPrompt';
 import { gameImage } from '@/components/game-image';
 import { Colors } from '@/constants/theme';
@@ -102,6 +103,8 @@ export default function GameDetailScreen() {
   const { isGuest } = useAuth();
   const { liked, like, dislike, markPlayed } = useLibrary();
   const [heroIdx, setHeroIdx] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
   const [signInPrompt, setSignInPrompt] = useState(false);
 
   // Fade the floating decision bar out while scrolling, back in when it settles.
@@ -208,13 +211,14 @@ export default function GameDetailScreen() {
               }
             >
               {heroUris.map((uri, i) => (
-                <Image
-                  key={`${uri}-${i}`}
-                  source={{ uri }}
-                  style={{ width: SCREEN_W, height: HERO_H }}
-                  contentFit="cover"
-                  transition={200}
-                />
+                <Pressable key={`${uri}-${i}`} onPress={() => { setViewerIndex(i); setViewerOpen(true); }}>
+                  <Image
+                    source={{ uri }}
+                    style={{ width: SCREEN_W, height: HERO_H }}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                </Pressable>
               ))}
             </ScrollView>
           ) : (
@@ -241,6 +245,15 @@ export default function GameDetailScreen() {
                 />
               ))}
             </View>
+          ) : null}
+          {heroUris.length ? (
+            <Pressable
+              onPress={() => { setViewerIndex(heroIdx); setViewerOpen(true); }}
+              hitSlop={8}
+              style={styles.expandBtn}
+            >
+              <Ionicons name="expand" size={18} color="#fff" />
+            </Pressable>
           ) : null}
         </View>
 
@@ -423,6 +436,13 @@ export default function GameDetailScreen() {
           router.push('/(auth)/login');
         }}
       />
+
+      <ImageViewer
+        images={heroUris}
+        initialIndex={viewerIndex}
+        visible={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+      />
     </View>
   );
 }
@@ -475,6 +495,17 @@ const styles = StyleSheet.create({
   heroFallback: { height: HERO_H, alignItems: 'center', justifyContent: 'center' },
   heroScrim: { opacity: 0.28 },
   dots: { position: 'absolute', bottom: 16, alignSelf: 'center', flexDirection: 'row', gap: 5 },
+  expandBtn: {
+    position: 'absolute',
+    right: 12,
+    bottom: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dot: { height: 6, borderRadius: 3 },
   titleBlock: { paddingHorizontal: 16, marginTop: 14 },
   title: { fontSize: 24, fontWeight: '900' },
