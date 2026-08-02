@@ -20,13 +20,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BlurView } from 'expo-blur';
+
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
 import { gameImage } from '@/components/game-image';
 import { GenreChip } from '@/components/GenreChip';
+import { SwipeTutorial, TUTORIAL_KEY } from '@/components/SwipeTutorial';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFirstRun } from '@/src/hooks/useFirstRun';
 import { useT } from '@/src/i18n';
 import { popularGames } from '@/src/api/endpoints';
 import { useDeck, type DeckSource } from '@/src/hooks/useDeck';
@@ -62,6 +66,7 @@ export default function SwipeScreen() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [burst, setBurst] = useState(0);
+  const tutorial = useFirstRun(TUTORIAL_KEY);
 
   // Daily featured game — deterministic pick from the popular list, stable for the calendar day.
   const [daily, setDaily] = useState<GameLite | null>(null);
@@ -295,9 +300,22 @@ export default function SwipeScreen() {
         )}
       </View>
 
-      {/* Action buttons (below card) */}
+      {/* Action buttons (below card) — designed control bar */}
       {!deck.error && !deckEmpty ? (
-        <View style={styles.actions}>
+        <View style={styles.actionBar}>
+          <BlurView
+            intensity={scheme === 'dark' ? 40 : 60}
+            tint={scheme === 'dark' ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.55)' : 'rgba(255,255,255,0.55)' },
+            ]}
+          />
+          <View style={[styles.actionHairline, { backgroundColor: c.muted }]} />
+          <View style={styles.actions}>
           <View style={styles.actionCol}>
             <ActionButton
               icon="thumbs-down"
@@ -331,6 +349,7 @@ export default function SwipeScreen() {
             />
             <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.undo')}</Text>
           </View>
+          </View>
         </View>
       ) : null}
 
@@ -362,6 +381,9 @@ export default function SwipeScreen() {
           fallSpeed={2800}
         />
       ) : null}
+
+      {/* First-run coach-mark tutorial (guest-friendly). Shown only after the flag loads as false. */}
+      {tutorial.seen === false ? <SwipeTutorial onDone={tutorial.markSeen} /> : null}
     </View>
   );
 }
@@ -402,13 +424,33 @@ const styles = StyleSheet.create({
   deckArea: { flex: 1, marginHorizontal: 4 },
   actionCol: { alignItems: 'center', gap: 6 },
   actionLabel: { fontSize: 12, fontWeight: '700' },
+  actionBar: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    marginTop: 6,
+    borderRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  actionHairline: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: StyleSheet.hairlineWidth,
+    opacity: 0.35,
+  },
   actions: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'center',
-    gap: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    justifyContent: 'space-around',
+    paddingHorizontal: 8,
+    paddingTop: 14,
+    paddingBottom: 12,
   },
   // เกมแห่งวัน banner
   daily: {

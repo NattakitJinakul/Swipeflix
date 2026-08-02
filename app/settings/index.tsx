@@ -8,8 +8,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { TUTORIAL_KEY } from '@/components/SwipeTutorial';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFirstRun } from '@/src/hooks/useFirstRun';
 import { useT } from '@/src/i18n';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -19,6 +21,7 @@ export default function SettingsIndex() {
   const c = Colors[scheme];
   const router = useRouter();
   const t = useT();
+  const tutorial = useFirstRun(TUTORIAL_KEY);
 
   const [notifyNew, setNotifyNew] = useState(false);
   const [hideAdult, setHideAdult] = useState(true);
@@ -48,7 +51,17 @@ export default function SettingsIndex() {
       </Group>
 
       <Group title={t('settings.groupData')} color={c.muted}>
-        <ActionRow c={c} icon="image-outline" label={t('settings.clearCache')} onPress={clearImageCache} last />
+        <ActionRow c={c} icon="image-outline" label={t('settings.clearCache')} onPress={clearImageCache} />
+        <ActionRow
+          c={c}
+          icon="help-circle-outline"
+          label={t('tutorial.replay')}
+          onPress={() => {
+            tutorial.reset();
+            Alert.alert(t('tutorial.replay'), t('tutorial.deckBody'));
+          }}
+          last
+        />
       </Group>
 
       <Group title={t('settings.groupAbout')} color={c.muted}>

@@ -270,4 +270,15 @@ export const en = {
     empty: 'No games found',
     loadFailed: 'Couldn’t load games',
   },
+  tutorial: {
+    deckTitle: 'Swipe to decide',
+    deckBody: 'Swipe right to like, left to dislike, up to mark as played. Tap a card for details.',
+    buttonsTitle: 'Or use the buttons',
+    buttonsBody: '👎 Dislike · ✓✓ Played · ❤ Like · ↩ Undo the last one.',
+    tabsTitle: 'Explore more',
+    tabsBody: 'Discover, mini-games in Play, your Library, and Community from your Profile.',
+    skip: 'Skip',
+    gotIt: 'Got it',
+    replay: 'Replay tutorial',
+  },
 };
