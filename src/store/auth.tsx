@@ -25,6 +25,8 @@ import type { Plan, UserProfile } from '../types/user';
 
 export type AuthContextValue = {
   user: User | null;
+  /** Guest-first: true when no signed-in user. Library runs in-memory; saves prompt login. */
+  isGuest: boolean;
   profile: UserProfile | null;
   /** Current subscription plan. Source of truth is the subscription doc; 'free' when absent/offline. */
   plan: Plan;
@@ -108,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, profile, plan, loading, signIn, signUp, signOut, googleSignIn }),
+    () => ({ user, isGuest: !user, profile, plan, loading, signIn, signUp, signOut, googleSignIn }),
     [user, profile, plan, loading, signIn, signUp, signOut, googleSignIn]
   );
 

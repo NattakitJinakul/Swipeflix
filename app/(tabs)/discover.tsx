@@ -1,6 +1,6 @@
 /**
- * Discover screen — search box on top (useSearch, debounced). No query -> Trending grid
- * (IG-explore vibe); with query -> results grid. Tap opens detail. See docs/02 + docs/11.
+ * Discover screen — search box on top (useSearch, debounced). No query -> popular grid
+ * (with a ยอดนิยม / คะแนนสูง toggle); with query -> results grid. Tap opens game detail.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -12,9 +12,16 @@ import { EmptyState } from '@/components/EmptyState';
 import { PosterGrid } from '@/components/PosterGrid';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { trending } from '@/src/api/endpoints';
+import { popularGames, topRatedGames } from '@/src/api/endpoints';
 import { useSearch } from '@/src/hooks/useSearch';
-import type { MovieLite } from '@/src/types/movie';
+import type { GameLite } from '@/src/types/game';
+
+type Feed = 'popular' | 'top_rated';
+
+const FEEDS: { key: Feed; label: string }[] = [
+  { key: 'popular', label: '🔥 ยอดนิยม' },
+  { key: 'top_rated', label: '✨ แนะนำ' },
+];
 
 export default function DiscoverScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -22,25 +29,27 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
 
   const { query, setQuery, results, loading } = useSearch();
-  const [trend, setTrend] = useState<MovieLite[]>([]);
-  const [trendLoading, setTrendLoading] = useState(true);
+  const [feed, setFeed] = useState<Feed>('popular');
+  const [grid, setGrid] = useState<GameLite[]>([]);
+  const [gridLoading, setGridLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    setTrendLoading(true);
-    trending('week')
-      .then((paged) => active && setTrend(paged.results))
-      .catch(() => active && setTrend([]))
-      .finally(() => active && setTrendLoading(false));
+    setGridLoading(true);
+    const fetch = feed === 'popular' ? popularGames() : topRatedGames();
+    fetch
+      .then((games) => active && setGrid(games))
+      .catch(() => active && setGrid([]))
+      .finally(() => active && setGridLoading(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [feed]);
 
   const searching = query.trim().length > 0;
-  const busy = searching ? loading : trendLoading;
-  const data = searching ? results : trend;
-  const openDetail = (id: number) => router.push(`/movie/${id}`);
+  const busy = searching ? loading : gridLoading;
+  const data = searching ? results : grid;
+  const openDetail = (id: number) => router.push(`/game/${id}`);
 
   return (
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top + 8 }]}>
@@ -49,7 +58,7 @@ export default function DiscoverScreen() {
         <Ionicons name="search" size={18} color={c.muted} />
         <TextInput
           style={[styles.input, { color: c.text }]}
-          placeholder="ค้นหาหนัง..."
+          placeholder="ค้นหาเกม..."
           placeholderTextColor={c.muted}
           value={query}
           onChangeText={setQuery}
@@ -65,7 +74,19 @@ export default function DiscoverScreen() {
       </View>
 
       {!searching ? (
-        <Text style={[styles.sectionLabel, { color: c.muted }]}>🔥 กำลังมาแรงสัปดาห์นี้</Text>
+        <View style={styles.feedRow}>
+          {FEEDS.map((f) => (
+            <Pressable
+              key={f.key}
+              onPress={() => setFeed(f.key)}
+              style={[styles.feedChip, { backgroundColor: feed === f.key ? c.primary : c.surface }]}
+            >
+              <Text style={[styles.feedText, { color: feed === f.key ? '#fff' : c.muted }]}>
+                {f.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
       ) : null}
 
       {busy && data.length === 0 ? (
@@ -74,18 +95,18 @@ export default function DiscoverScreen() {
         </View>
       ) : (
         <PosterGrid
-          movies={data}
-          numColumns={3}
+          items={data}
+          numColumns={2}
           onPress={openDetail}
           ListEmptyComponent={
             searching ? (
               <EmptyState
                 icon="search-outline"
                 title="ไม่พบผลลัพธ์"
-                subtitle={`ไม่เจอหนังที่ตรงกับ "${query}"`}
+                subtitle={`ไม่เจอเกมที่ตรงกับ "${query}"`}
               />
             ) : (
-              <EmptyState icon="flame-outline" title="โหลดหนังไม่สำเร็จ" subtitle="ลองใหม่อีกครั้ง" />
+              <EmptyState icon="flame-outline" title="โหลดเกมไม่สำเร็จ" subtitle="ลองใหม่อีกครั้ง" />
             )
           }
         />
@@ -106,6 +127,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   input: { flex: 1, fontSize: 15, paddingVertical: 0 },
-  sectionLabel: { fontSize: 14, fontWeight: '700', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  feedRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
+  feedChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
+  feedText: { fontSize: 13, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

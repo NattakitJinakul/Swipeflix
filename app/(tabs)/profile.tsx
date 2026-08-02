@@ -1,8 +1,8 @@
 /**
- * Profile tab — avatar + plan badge, stat row (liked/watched/avg rating),
- * taste chart (% per genre), Movie DNA (favorite decade + achievement badges),
- * and a button into Settings. Empty state when the library is empty.
- * See docs/10-profile-settings.md + docs/11-enhancements.md.
+ * Profile tab — guest-first. Guests see a friendly "โหมดผู้เยี่ยมชม" state with a login CTA
+ * (plus any local liked/played counts). Signed-in users get avatar + plan badge, stat row
+ * (liked/played/avg rating), taste chart (% per genre), Game DNA (favorite decade + badges),
+ * and a button into Settings.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -29,8 +29,8 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { user, profile } = useAuth();
-  const { liked, watched } = useLibrary();
+  const { user, profile, isGuest } = useAuth();
+  const { liked, played } = useLibrary();
 
   const [plan, setPlan] = useState<Plan>('free');
 
@@ -50,14 +50,61 @@ export default function ProfileScreen() {
     };
   }, [user?.uid]);
 
-  const dna = useMemo(() => computeDNA(liked, watched), [liked, watched]);
+  const dna = useMemo(() => computeDNA(liked, played), [liked, played]);
   const planDef = getPlan(plan);
 
-  const displayName = profile?.displayName || user?.displayName || 'ผู้ชม';
+  const statRow = (
+    <View style={styles.statRow}>
+      <StatBadge value={liked.length} label="อยากเล่น" icon="heart" color={c.like} />
+      <StatBadge value={played.length} label="เล่นแล้ว" icon="game-controller" color={c.watched} />
+      <StatBadge
+        value={dna.topGenres.length}
+        label="แนวที่ชอบ"
+        icon="grid"
+      />
+    </View>
+  );
+
+  // ---- Guest state ----
+  if (isGuest) {
+    return (
+      <ScrollView
+        style={{ backgroundColor: c.background }}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+        ]}
+      >
+        <View style={styles.header}>
+          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: c.surface }]}>
+            <Ionicons name="person-outline" size={40} color={c.muted} />
+          </View>
+          <Text style={[styles.name, { color: c.text }]}>โหมดผู้เยี่ยมชม</Text>
+          <Text style={[styles.guestSub, { color: c.muted }]}>
+            เข้าสู่ระบบเพื่อบันทึกเกมที่ชอบ + ดูสถิติ
+          </Text>
+          <Pressable
+            onPress={() => router.push('/(auth)/login')}
+            style={({ pressed }) => [
+              styles.loginBtn,
+              { backgroundColor: c.primary, opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Ionicons name="log-in-outline" size={18} color="#fff" />
+            <Text style={styles.loginBtnText}>เข้าสู่ระบบ</Text>
+          </Pressable>
+        </View>
+
+        {statRow}
+      </ScrollView>
+    );
+  }
+
+  // ---- Signed-in state ----
+  const displayName = profile?.displayName || user?.displayName || 'ผู้เล่น';
   const avatar = profile?.avatar ?? user?.photoURL ?? null;
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
-  const hasData = liked.length > 0 || watched.length > 0;
-
+  const hasData = liked.length > 0 || played.length > 0;
   const topGenres = dna.topGenres.slice(0, 5);
 
   return (
@@ -95,24 +142,15 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      {/* Stat row */}
-      <View style={styles.statRow}>
-        <StatBadge value={liked.length} label="ถูกใจ" icon="heart" color={c.like} />
-        <StatBadge value={watched.length} label="ดูแล้ว" icon="checkmark-done" color={c.watched} />
-        <StatBadge
-          value={dna.avgRating > 0 ? dna.avgRating.toFixed(1) : '—'}
-          label="เรตติ้งเฉลี่ย"
-          icon="star"
-        />
-      </View>
+      {statRow}
 
       {!hasData ? (
         <View style={styles.emptyWrap}>
           <EmptyState
             icon="sparkles-outline"
             title="ยังไม่มีข้อมูลรสนิยม"
-            subtitle="ปัดหนังที่ชอบเพื่อปลดล็อก taste chart และ Movie DNA ของคุณ"
-            actionLabel="เริ่มปัดหนัง"
+            subtitle="ปัดเกมที่ชอบเพื่อปลดล็อก taste chart และ Game DNA ของคุณ"
+            actionLabel="เริ่มปัดเกม"
             onAction={() => router.push('/(tabs)')}
           />
         </View>
@@ -123,7 +161,7 @@ export default function ProfileScreen() {
             <Section title="แนวที่ชอบ" color={c.text}>
               <View style={[styles.card, { backgroundColor: c.surface }]}>
                 {topGenres.map((g) => (
-                  <View key={g.id} style={styles.barRow}>
+                  <View key={g.name} style={styles.barRow}>
                     <Text style={[styles.barLabel, { color: c.text }]} numberOfLines={1}>
                       {g.name}
                     </Text>
@@ -142,8 +180,8 @@ export default function ProfileScreen() {
             </Section>
           ) : null}
 
-          {/* Movie DNA */}
-          <Section title="Movie DNA" color={c.text}>
+          {/* Game DNA */}
+          <Section title="Game DNA" color={c.text}>
             {dna.favoriteDecade ? (
               <View style={[styles.card, styles.decadeCard, { backgroundColor: c.surface }]}>
                 <Ionicons name="calendar" size={22} color={c.primary} />
@@ -152,7 +190,7 @@ export default function ProfileScreen() {
                     ทศวรรษที่ชอบ · {dna.favoriteDecade.label}
                   </Text>
                   <Text style={[styles.decadeSub, { color: c.muted }]}>
-                    {dna.favoriteDecade.percent}% ของหนังที่คุณถูกใจ
+                    {dna.favoriteDecade.percent}% ของเกมที่คุณถูกใจ
                   </Text>
                 </View>
               </View>
@@ -218,6 +256,17 @@ const styles = StyleSheet.create({
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontSize: 36, fontWeight: '900' },
   name: { fontSize: 22, fontWeight: '900' },
+  guestSub: { fontSize: 14, textAlign: 'center', paddingHorizontal: 24 },
+  loginBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: 999,
+  },
+  loginBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   planBadge: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,7 +1,8 @@
 /**
- * Watchlist screen — segmented "อยากดู | เคยดูแล้ว" over PosterGrid, with sort
- * (เพิ่งเพิ่ม / เรตติ้ง / A-Z) and item actions (remove; move liked -> watched).
- * Tap opens detail; an Edit toggle turns taps into an action menu. See docs/02 + docs/11.
+ * Watchlist screen — segmented "อยากเล่น | เล่นแล้ว" over PosterGrid, with sort
+ * (เพิ่งเพิ่ม / คะแนน / A-Z) and item actions (remove; move liked -> played).
+ * Tap opens game detail; an Edit toggle turns taps into an action menu.
+ * Guests can't save — an empty library prompts login.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -13,23 +14,24 @@ import { EmptyState } from '@/components/EmptyState';
 import { PosterGrid } from '@/components/PosterGrid';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/src/store/auth';
 import { useLibrary } from '@/src/store/library';
-import type { MovieLite } from '@/src/types/movie';
+import type { GameLite } from '@/src/types/game';
 
-type Tab = 'want' | 'seen';
-type Sort = 'recent' | 'rating' | 'az';
+type Tab = 'want' | 'played';
+type Sort = 'recent' | 'year' | 'az';
 
 const SORTS: { key: Sort; label: string }[] = [
   { key: 'recent', label: 'เพิ่งเพิ่ม' },
-  { key: 'rating', label: 'เรตติ้ง' },
+  { key: 'year', label: 'ปีล่าสุด' },
   { key: 'az', label: 'A-Z' },
 ];
 
-function sortMovies(list: MovieLite[], sort: Sort): MovieLite[] {
+function sortGames(list: GameLite[], sort: Sort): GameLite[] {
   if (sort === 'recent') return list; // store keeps newest-first
   const copy = [...list];
-  if (sort === 'rating') return copy.sort((a, b) => b.rating - a.rating);
-  return copy.sort((a, b) => a.title.localeCompare(b.title));
+  if (sort === 'year') return copy.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+  return copy.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export default function WatchlistScreen() {
@@ -37,39 +39,63 @@ export default function WatchlistScreen() {
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
 
-  const { liked, watched, remove, moveToWatched } = useLibrary();
+  const { isGuest } = useAuth();
+  const { liked, played, remove, moveToPlayed } = useLibrary();
   const [tab, setTab] = useState<Tab>('want');
   const [sort, setSort] = useState<Sort>('recent');
   const [editing, setEditing] = useState(false);
 
-  const source = tab === 'want' ? liked : watched;
-  const data = useMemo(() => sortMovies(source, sort), [source, sort]);
+  const source = tab === 'want' ? liked : played;
+  const data = useMemo(() => sortGames(source, sort), [source, sort]);
 
   const onPressItem = (id: number) => {
     if (!editing) {
-      router.push(`/movie/${id}`);
+      router.push(`/game/${id}`);
       return;
     }
-    const movie = source.find((m) => m.id === id);
-    if (!movie) return;
+    const game = source.find((g) => g.id === id);
+    if (!game) return;
 
     const buttons: { text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }[] = [];
     if (tab === 'want') {
-      buttons.push({ text: 'ดูแล้ว', onPress: () => moveToWatched(movie) });
+      buttons.push({ text: 'เล่นแล้ว', onPress: () => moveToPlayed(game) });
     }
     buttons.push({
       text: 'ลบออก',
       style: 'destructive',
-      onPress: () => remove(id, tab === 'want' ? 'liked' : 'watched'),
+      onPress: () => remove(id, tab === 'want' ? 'liked' : 'played'),
     });
     buttons.push({ text: 'ยกเลิก', style: 'cancel' });
-    Alert.alert(movie.title, undefined, buttons);
+    Alert.alert(game.name, undefined, buttons);
   };
+
+  const emptyComponent =
+    isGuest && liked.length === 0 && played.length === 0 ? (
+      <EmptyState
+        icon="log-in-outline"
+        title="เข้าสู่ระบบเพื่อบันทึกเกม"
+        subtitle="เข้าสู่ระบบเพื่อเก็บเกมที่อยากเล่นและที่เล่นแล้วไว้ที่นี่"
+        actionLabel="เข้าสู่ระบบ"
+        onAction={() => router.push('/(auth)/login')}
+      />
+    ) : (
+      <EmptyState
+        icon={tab === 'want' ? 'heart-outline' : 'game-controller-outline'}
+        title={tab === 'want' ? 'ยังไม่มีเกมที่อยากเล่น' : 'ยังไม่มีเกมที่เล่นแล้ว'}
+        subtitle={
+          tab === 'want'
+            ? 'ปัดขวาเกมที่ชอบในหน้า Swipe เพื่อเก็บไว้ที่นี่'
+            : 'ทำเครื่องหมาย "เล่นแล้ว" จากหน้า Swipe หรือ watchlist'
+        }
+        actionLabel="ไปปัดเกม"
+        onAction={() => router.push('/(tabs)')}
+      />
+    );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top + 8 }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: c.text }]}>Watchlist</Text>
+        <Text style={[styles.title, { color: c.text }]}>รายการเกม</Text>
         <Pressable hitSlop={10} onPress={() => setEditing((e) => !e)}>
           <Text style={[styles.edit, { color: editing ? c.primary : c.muted }]}>
             {editing ? 'เสร็จ' : 'จัดการ'}
@@ -79,14 +105,14 @@ export default function WatchlistScreen() {
 
       {/* Segmented control */}
       <View style={[styles.segment, { backgroundColor: c.surface }]}>
-        {(['want', 'seen'] as Tab[]).map((t) => (
+        {(['want', 'played'] as Tab[]).map((t) => (
           <Pressable
             key={t}
             onPress={() => setTab(t)}
             style={[styles.segmentItem, tab === t && { backgroundColor: c.primary }]}
           >
             <Text style={[styles.segmentText, { color: tab === t ? '#fff' : c.muted }]}>
-              {t === 'want' ? `อยากดู (${liked.length})` : `เคยดูแล้ว (${watched.length})`}
+              {t === 'want' ? `อยากเล่น (${liked.length})` : `เล่นแล้ว (${played.length})`}
             </Text>
           </Pressable>
         ))}
@@ -109,24 +135,7 @@ export default function WatchlistScreen() {
         ))}
       </View>
 
-      <PosterGrid
-        movies={data}
-        numColumns={3}
-        onPress={onPressItem}
-        ListEmptyComponent={
-          <EmptyState
-            icon={tab === 'want' ? 'heart-outline' : 'eye-outline'}
-            title={tab === 'want' ? 'ยังไม่มีหนังที่อยากดู' : 'ยังไม่มีหนังที่ดูแล้ว'}
-            subtitle={
-              tab === 'want'
-                ? 'ปัดขวาหนังที่ชอบในหน้า Swipe เพื่อเก็บไว้ที่นี่'
-                : 'ทำเครื่องหมาย "ดูแล้ว" จากหน้า Swipe หรือ watchlist'
-            }
-            actionLabel="ไปปัดหนัง"
-            onAction={() => router.push('/(tabs)')}
-          />
-        }
-      />
+      <PosterGrid items={data} numColumns={2} onPress={onPressItem} ListEmptyComponent={emptyComponent} />
     </View>
   );
 }

@@ -1,50 +1,48 @@
 /**
- * useDeck — swipe deck loader. Pulls TMDB pages by source (trending / top rated /
- * now playing / for-you), applies filters (genre · year · minRating), drops ids the
- * user has already liked/watched/disliked, dedups, and prefetches upcoming posters.
- * Owns a forward cursor (index/current/advance/rewind). See docs/02 + docs/11.
+ * useDeck — swipe deck loader. FreeToGame has NO server pagination, so we fetch the full
+ * (sort-ordered, platform-filtered) list ONCE per source/filter, filter by category + seen-ids
+ * CLIENT-SIDE, then page the deck client-side. Keeps the movie build's public shape and the
+ * error-vs-exhausted separation. exhausted = whole fetched list shown; error = fetch failed.
  */
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { discoverMovies, trending, type DiscoverOptions } from '../api/endpoints';
+import { allGames, type Sort } from '../api/endpoints';
 import { useLibrary } from '../store/library';
 import { useSettings } from '../store/settings';
-import type { MovieLite } from '../types/movie';
+import type { GameLite } from '../types/game';
+import { slugifyGenre } from '../utils/genres';
 
-export type DeckSource = 'trending' | 'top_rated' | 'now_playing' | 'for_you';
+export type DeckSource = 'popular' | 'new' | 'relevance' | 'for_you';
 
 export type DeckFilters = {
-  genres: number[];
-  year?: number;
-  minRating?: number;
-  /** Max runtime in minutes. UI-only hint — TMDB list rows carry no runtime, so it is not enforced on the deck. */
-  maxRuntime?: number;
+  categories: string[];
+  platform?: 'pc' | 'browser' | 'all';
 };
 
-const SORT_BY: Record<DeckSource, string> = {
-  trending: 'popularity.desc',
-  top_rated: 'vote_average.desc',
-  now_playing: 'primary_release_date.desc',
-  for_you: 'popularity.desc',
+const SORT: Record<DeckSource, Sort> = {
+  popular: 'popularity',
+  new: 'release-date',
+  relevance: 'relevance',
+  for_you: 'popularity',
 };
 
-const POSTER_URL = (path: string | null): string | null =>
-  path ? `https://image.tmdb.org/t/p/w500${path}` : null;
+// How many cards to reveal per client-side page.
+const PAGE_SIZE = 10;
 
 export type UseDeck = {
-  deck: MovieLite[];
+  deck: GameLite[];
   index: number;
-  current: MovieLite | undefined;
+  current: GameLite | undefined;
   advance: () => void;
   rewind: () => void;
   loadMore: () => void;
   reload: () => void;
   retry: () => void;
   loading: boolean;
-  /** No more results from the source (a page came back empty). NOT a fetch failure — see `error`. */
+  /** Whole fetched list shown. NOT a fetch failure — see `error`. */
   exhausted: boolean;
-  /** Last fetch failed (bad/placeholder token, offline). Show a retry state, not "seen everything". */
+  /** Last fetch failed (offline). Show a retry state, not "seen everything". */
   error: boolean;
   source: DeckSource;
   setSource: (s: DeckSource) => void;
@@ -53,130 +51,92 @@ export type UseDeck = {
 };
 
 export function useDeck(): UseDeck {
-  const { liked, watched, disliked } = useLibrary();
-  const { favoriteGenres, language, region } = useSettings();
+  const { liked, played, disliked } = useLibrary();
+  const { favoriteGenres } = useSettings();
 
-  const [source, setSourceState] = useState<DeckSource>('trending');
-  const [filters, setFiltersState] = useState<DeckFilters>({ genres: [] });
+  const [source, setSourceState] = useState<DeckSource>('popular');
+  const [filters, setFiltersState] = useState<DeckFilters>({ categories: [] });
 
-  const [deck, setDeck] = useState<MovieLite[]>([]);
+  // Full fetched list (unfiltered by seen-ids); the deck is a client-side window over it.
+  const [pool, setPool] = useState<GameLite[]>([]);
+  const [shown, setShown] = useState(0); // how many of the eligible pool are in the deck
   const [index, setIndex] = useState(0);
-  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [exhausted, setExhausted] = useState(false);
   const [error, setError] = useState(false);
 
-  // ids already in the deck (avoid dupes across pages); ref so fetch closure stays stable.
-  const deckIds = useRef<Set<number>>(new Set());
   const reqId = useRef(0); // guards against out-of-order responses after reload
-  const lastAttempt = useRef<{ page: number; replace: boolean }>({ page: 1, replace: true });
 
   const excluded = useMemo(
-    () => new Set<number>([...liked.map((m) => m.id), ...watched.map((m) => m.id), ...disliked]),
-    [liked, watched, disliked],
+    () => new Set<number>([...liked.map((g) => g.id), ...played.map((g) => g.id), ...disliked]),
+    [liked, played, disliked],
   );
 
-  const fetchPage = useCallback(
-    async (nextPage: number): Promise<MovieLite[]> => {
-      const effectiveGenres =
-        filters.genres.length > 0
-          ? filters.genres
-          : source === 'for_you'
-            ? favoriteGenres
-            : [];
+  // Category set for this source/filter (explicit filter wins; else favorites for "for_you").
+  const activeCategories = useMemo(() => {
+    const cats = filters.categories.length ? filters.categories : source === 'for_you' ? favoriteGenres : [];
+    return new Set(cats);
+  }, [filters.categories, source, favoriteGenres]);
 
-      // Fresh trending uses the dedicated endpoint (no paging); everything else via discover.
-      if (source === 'trending' && nextPage === 1 && effectiveGenres.length === 0 && !filters.year) {
-        return (await trending('week')).results;
-      }
-
-      const opts: DiscoverOptions = {
-        page: nextPage,
-        sortBy: SORT_BY[source],
-        language,
-        region,
-      };
-      if (effectiveGenres.length) opts.genres = effectiveGenres;
-      if (filters.year) opts.year = filters.year;
-      if (filters.minRating != null) opts.minRating = filters.minRating;
-      return (await discoverMovies(opts)).results;
-    },
-    [source, filters, favoriteGenres, language, region],
+  // Eligible = pool minus seen-ids, minus category-mismatch.
+  const eligible = useMemo(
+    () =>
+      pool.filter(
+        (g) =>
+          !excluded.has(g.id) &&
+          (activeCategories.size === 0 || activeCategories.has(slugifyGenre(g.genre))),
+      ),
+    [pool, excluded, activeCategories],
   );
 
-  // Accumulate at least this many fresh (not-yet-seen) cards per load, paging forward as needed,
-  // but never fetch more than MAX_PAGES_PER_LOAD pages in one call (runaway guard for all-excluded pages).
-  const MIN_FRESH = 5;
-  const MAX_PAGES_PER_LOAD = 5;
+  const deck = useMemo(() => eligible.slice(0, shown), [eligible, shown]);
+  const exhausted = !loading && !error && shown >= eligible.length && index >= eligible.length;
 
-  const load = useCallback(
-    async (startPage: number, replace: boolean) => {
-      const my = ++reqId.current;
-      lastAttempt.current = { page: startPage, replace };
-      setLoading(true);
-      setError(false);
-      try {
-        if (replace) deckIds.current = new Set();
-        const collected: MovieLite[] = [];
-        let pageCursor = startPage;
-        let lastGood = startPage - 1;
-        let emptied = false;
-        for (let i = 0; i < MAX_PAGES_PER_LOAD; i++) {
-          const results = await fetchPage(pageCursor);
-          if (my !== reqId.current) return; // superseded by a newer reload
-          lastGood = pageCursor;
-          if (results.length === 0) {
-            emptied = true;
-            break;
-          }
-          const fresh = results.filter(
-            (m) => !excluded.has(m.id) && !deckIds.current.has(m.id),
-          );
-          fresh.forEach((m) => deckIds.current.add(m.id));
-          collected.push(...fresh);
-          pageCursor += 1;
-          if (collected.length >= MIN_FRESH) break;
-        }
-        if (my !== reqId.current) return;
-        setDeck((prev) => (replace ? collected : [...prev, ...collected]));
-        setPage(lastGood);
-        // exhausted ONLY means the source ran out (an empty page), never a fetch failure.
-        setExhausted(emptied);
-      } catch {
-        if (my === reqId.current) setError(true);
-      } finally {
-        if (my === reqId.current) setLoading(false);
-      }
-    },
-    [fetchPage, excluded],
-  );
+  const fetchPool = useCallback(async () => {
+    const my = ++reqId.current;
+    setLoading(true);
+    setError(false);
+    try {
+      const list = await allGames({ sort: SORT[source], platform: filters.platform });
+      if (my !== reqId.current) return;
+      setPool(list);
+    } catch {
+      if (my === reqId.current) setError(true);
+    } finally {
+      if (my === reqId.current) setLoading(false);
+    }
+  }, [source, filters.platform]);
 
-  // (Re)load page 1 whenever the source or filters change.
+  // Refetch the pool when source or platform changes; reset the cursor/window.
   useEffect(() => {
     setIndex(0);
-    setDeck([]);
-    setExhausted(false);
-    void load(1, true);
+    setShown(PAGE_SIZE);
+    setPool([]);
+    void fetchPool();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, filters]);
+  }, [source, filters.platform]);
 
-  // Prefetch the next couple of posters for smooth reveal.
+  // Category filter changes don't need a refetch (client-side) — just reset the window.
   useEffect(() => {
-    for (const m of deck.slice(index + 1, index + 3)) {
-      const url = POSTER_URL(m.poster);
-      if (url) void Image.prefetch(url);
+    setIndex(0);
+    setShown(PAGE_SIZE);
+  }, [filters.categories, favoriteGenres]);
+
+  // Prefetch the next couple of covers for smooth reveal (FreeToGame thumbnails are full URLs).
+  useEffect(() => {
+    for (const g of deck.slice(index + 1, index + 3)) {
+      if (g.image) void Image.prefetch(g.image);
     }
   }, [deck, index]);
 
   const loadMore = useCallback(() => {
-    if (loading || exhausted || error) return;
-    void load(page + 1, false);
-  }, [loading, exhausted, error, page, load]);
+    if (loading || error) return;
+    setShown((s) => (s >= eligible.length ? s : s + PAGE_SIZE));
+  }, [loading, error, eligible.length]);
 
-  // Auto top-up when the cursor nears the end of the loaded deck.
+  // Auto top-up the client window when the cursor nears the end of the loaded deck.
   useEffect(() => {
-    if (deck.length - index <= 3 && !loading && !exhausted && !error) loadMore();
-  }, [index, deck.length, loading, exhausted, error, loadMore]);
+    if (deck.length - index <= 3 && shown < eligible.length && !loading && !error) loadMore();
+  }, [index, deck.length, shown, eligible.length, loading, error, loadMore]);
 
   const advance = useCallback(() => setIndex((i) => i + 1), []);
   const rewind = useCallback(() => setIndex((i) => Math.max(0, i - 1)), []);
@@ -185,18 +145,15 @@ export function useDeck(): UseDeck {
   const setFilters = useCallback((f: DeckFilters) => setFiltersState(f), []);
   const reload = useCallback(() => {
     setIndex(0);
-    setDeck([]);
-    setExhausted(false);
+    setShown(PAGE_SIZE);
     setError(false);
-    void load(1, true);
-  }, [load]);
+    void fetchPool();
+  }, [fetchPool]);
 
-  // Retry the exact fetch that failed (keeps deck position); clears the error first.
   const retry = useCallback(() => {
-    const { page: p, replace } = lastAttempt.current;
     setError(false);
-    void load(p, replace);
-  }, [load]);
+    void fetchPool();
+  }, [fetchPool]);
 
   return {
     deck,

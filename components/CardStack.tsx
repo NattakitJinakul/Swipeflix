@@ -21,7 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import type { MovieLite } from '@/src/types/movie';
+import type { GameLite } from '@/src/types/game';
 import { SwipeCard } from './SwipeCard';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -30,17 +30,17 @@ const SWIPE_UP = 140; // upward fling distance to commit "seen"
 const FLY = SCREEN_W * 1.4;
 
 export type CardStackProps = {
-  movies: MovieLite[];
+  games: GameLite[];
   onSwipeLeft: (id: number) => void; // nope
-  onSwipeRight: (movie: MovieLite) => void; // like
-  onSwipeUp: (movie: MovieLite) => void; // seen
+  onSwipeRight: (game: GameLite) => void; // like
+  onSwipeUp: (game: GameLite) => void; // seen
   onTapCard: (id: number) => void;
-  /** Resolve a movie's genre ids to display names for the top card. */
-  genresOf?: (movie: MovieLite) => string[];
+  /** Resolve a game's genre ids to display names for the top card. */
+  genresOf?: (game: GameLite) => string[];
 };
 
 export function CardStack({
-  movies,
+  games,
   onSwipeLeft,
   onSwipeRight,
   onSwipeUp,
@@ -64,21 +64,21 @@ export function CardStack({
   }, [x, y]);
 
   const fire = useCallback(
-    (dir: 'left' | 'right' | 'up', movie: MovieLite) => {
+    (dir: 'left' | 'right' | 'up', game: GameLite) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      if (dir === 'left') onSwipeLeft(movie.id);
-      else if (dir === 'right') onSwipeRight(movie);
-      else onSwipeUp(movie);
+      if (dir === 'left') onSwipeLeft(game.id);
+      else if (dir === 'right') onSwipeRight(game);
+      else onSwipeUp(game);
     },
     [onSwipeLeft, onSwipeRight, onSwipeUp],
   );
 
-  const topMovie = movies[index];
+  const topGame = games[index];
 
   const tap = Gesture.Tap()
     .maxDistance(10)
     .onEnd(() => {
-      if (topMovie) runOnJS(onTapCard)(topMovie.id);
+      if (topGame) runOnJS(onTapCard)(topGame.id);
     });
 
   const pan = Gesture.Pan()
@@ -97,15 +97,15 @@ export function CardStack({
         if (finished) runOnJS(advance)();
       };
 
-      if (goUp && topMovie) {
-        runOnJS(fire)('up', topMovie);
+      if (goUp && topGame) {
+        runOnJS(fire)('up', topGame);
         y.value = withTiming(-FLY, fly, done);
-      } else if (goRight && topMovie) {
-        runOnJS(fire)('right', topMovie);
+      } else if (goRight && topGame) {
+        runOnJS(fire)('right', topGame);
         y.value = withTiming(y.value + 90, fly); // gentle downward arc
         x.value = withTiming(FLY, fly, done);
-      } else if (goLeft && topMovie) {
-        runOnJS(fire)('left', topMovie);
+      } else if (goLeft && topGame) {
+        runOnJS(fire)('left', topGame);
         y.value = withTiming(y.value + 90, fly);
         x.value = withTiming(-FLY, fly, done);
       } else {
@@ -140,25 +140,25 @@ export function CardStack({
   }));
 
   // Render up to 3, back-to-front so the top card wins z-order.
-  const third = movies[index + 2];
-  const second = movies[index + 1];
+  const third = games[index + 2];
+  const second = games[index + 1];
 
   return (
     <View style={styles.root}>
       {third ? (
         <Animated.View style={[styles.cardWrap, thirdStyle]} pointerEvents="none">
-          <SwipeCard movie={third} />
+          <SwipeCard game={third} />
         </Animated.View>
       ) : null}
       {second ? (
         <Animated.View style={[styles.cardWrap, secondStyle]} pointerEvents="none">
-          <SwipeCard movie={second} genres={genresOf?.(second)} />
+          <SwipeCard game={second} genres={genresOf?.(second)} />
         </Animated.View>
       ) : null}
-      {topMovie ? (
-        <GestureDetector gesture={gesture} key={topMovie.id}>
+      {topGame ? (
+        <GestureDetector gesture={gesture} key={topGame.id}>
           <Animated.View style={[styles.cardWrap, topStyle]}>
-            <SwipeCard movie={topMovie} genres={genresOf?.(topMovie)} dragX={x} dragY={y} />
+            <SwipeCard game={topGame} genres={genresOf?.(topGame)} dragX={x} dragY={y} />
           </Animated.View>
         </GestureDetector>
       ) : null}

@@ -16,7 +16,7 @@ export type UserProfile = {
   region: string; // e.g. 'TH'
   language: string; // e.g. 'th-TH'
   theme: ThemePref;
-  favoriteGenres: number[]; // TMDB genre ids
+  favoriteGenres: string[]; // FreeToGame category slugs
 };
 
 export type Subscription = {

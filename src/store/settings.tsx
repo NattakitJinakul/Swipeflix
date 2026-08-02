@@ -27,7 +27,7 @@ type SettingsState = {
   theme: ThemePref;
   region: string;
   language: string;
-  favoriteGenres: number[];
+  favoriteGenres: string[];
   // Content + accessibility prefs (docs/10 + docs/11).
   autoplayTrailer: boolean;
   reduceMotion: boolean;
@@ -52,7 +52,7 @@ export type SettingsContextValue = SettingsState & {
   setTheme: (theme: ThemePref) => void;
   setRegion: (region: string) => void;
   setLanguage: (language: string) => void;
-  setFavoriteGenres: (genres: number[]) => void;
+  setFavoriteGenres: (genres: string[]) => void;
   setAutoplayTrailer: (v: boolean) => void;
   setReduceMotion: (v: boolean) => void;
   setSwipeSensitivity: (v: SwipeSensitivity) => void;
@@ -131,7 +131,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setRegion = useCallback((region: string) => update('region', region), [update]);
   const setLanguage = useCallback((language: string) => update('language', language), [update]);
   const setFavoriteGenres = useCallback(
-    (genres: number[]) => update('favoriteGenres', genres),
+    (genres: string[]) => update('favoriteGenres', genres),
     [update]
   );
   const setAutoplayTrailer = useCallback((v: boolean) => update('autoplayTrailer', v), [update]);

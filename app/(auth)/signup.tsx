@@ -68,7 +68,7 @@ export default function SignupScreen() {
           keyboardDismissMode="on-drag"
         >
           <View style={styles.brand}>
-            <Text style={[styles.logo, { color: c.primary }]}>SWIPEFLIX</Text>
+            <Text style={[styles.logo, { color: c.primary }]}>SWIPEPLAY</Text>
             <Text style={[styles.tagline, { color: c.muted }]}>สร้างบัญชีเพื่อเริ่มปัด</Text>
           </View>
 

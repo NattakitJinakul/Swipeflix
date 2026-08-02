@@ -9,7 +9,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { db } from '@/src/firebase/config';
 import { useAuth } from '@/src/store/auth';
 import { useSettings } from '@/src/store/settings';
-import { GENRE_MAP } from '@/src/utils/genres';
+import { CATEGORIES, categoryLabel } from '@/src/utils/genres';
 
 const LANGS = [
   { key: 'th-TH', label: 'ไทย' },
@@ -19,8 +19,6 @@ const REGIONS = [
   { key: 'TH', label: 'ไทย 🇹🇭' },
   { key: 'US', label: 'สหรัฐฯ 🇺🇸' },
 ];
-const GENRES = Object.entries(GENRE_MAP).map(([id, name]) => ({ id: Number(id), name }));
-
 const MIN_GENRES = 3;
 const MAX_GENRES = 5;
 
@@ -33,13 +31,13 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState<0 | 1>(0);
   const [lang, setLang] = useState('th-TH');
   const [region, setReg] = useState('TH');
-  const [genres, setGenres] = useState<number[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
 
-  const toggleGenre = (id: number) => {
+  const toggleGenre = (slug: string) => {
     setGenres((prev) => {
-      if (prev.includes(id)) return prev.filter((g) => g !== id);
+      if (prev.includes(slug)) return prev.filter((g) => g !== slug);
       if (prev.length >= MAX_GENRES) return prev;
-      return [...prev, id];
+      return [...prev, slug];
     });
   };
 
@@ -126,18 +124,18 @@ export default function OnboardingScreen() {
         </View>
       ) : (
         <View style={styles.body}>
-          <Text style={[styles.title, { color: c.text }]}>แนวหนังที่ชอบ</Text>
+          <Text style={[styles.title, { color: c.text }]}>แนวเกมที่ชอบ</Text>
           <Text style={[styles.subtitle, { color: c.muted }]}>
             เลือก {MIN_GENRES}-{MAX_GENRES} แนว เพื่อจัดชุดการ์ดให้ตรงจริต ({genres.length}/{MAX_GENRES})
           </Text>
 
           <ScrollView style={styles.flex} contentContainerStyle={styles.chipWrap}>
-            {GENRES.map((g) => (
+            {CATEGORIES.map((slug) => (
               <GenreChip
-                key={g.id}
-                label={g.name}
-                selected={genres.includes(g.id)}
-                onToggle={() => toggleGenre(g.id)}
+                key={slug}
+                label={categoryLabel(slug)}
+                selected={genres.includes(slug)}
+                onToggle={() => toggleGenre(slug)}
               />
             ))}
           </ScrollView>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Swipeflix",
+    "name": "Swipeplay",
     "slug": "swipeflix",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -42,7 +42,8 @@
             "backgroundColor": "#0B0B0F"
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

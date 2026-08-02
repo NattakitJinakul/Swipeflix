@@ -1,24 +1,24 @@
 /**
- * useSearch — debounced TMDB movie search. Empty/whitespace query yields no results.
+ * useSearch — debounced RAWG game search. Empty/whitespace query yields no results.
  * ~400ms debounce; stale responses are discarded. See docs/02 (Discover) + docs/11.
  */
 import { useEffect, useRef, useState } from 'react';
 
-import { searchMovies } from '../api/endpoints';
-import type { MovieLite } from '../types/movie';
+import { searchGames } from '../api/endpoints';
+import type { GameLite } from '../types/game';
 
 const DEBOUNCE_MS = 400;
 
 export type UseSearch = {
   query: string;
   setQuery: (q: string) => void;
-  results: MovieLite[];
+  results: GameLite[];
   loading: boolean;
 };
 
 export function useSearch(): UseSearch {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<MovieLite[]>([]);
+  const [results, setResults] = useState<GameLite[]>([]);
   const [loading, setLoading] = useState(false);
   const reqId = useRef(0);
 
@@ -33,9 +33,9 @@ export function useSearch(): UseSearch {
     setLoading(true);
     const my = ++reqId.current;
     const timer = setTimeout(() => {
-      searchMovies(trimmed)
-        .then((paged) => {
-          if (my === reqId.current) setResults(paged.results);
+      searchGames(trimmed)
+        .then((games) => {
+          if (my === reqId.current) setResults(games);
         })
         .catch(() => {
           if (my === reqId.current) setResults([]);

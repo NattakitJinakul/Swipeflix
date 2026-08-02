@@ -63,8 +63,8 @@ export default function LoginScreen() {
       >
         <Pressable style={styles.container} onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.brand}>
-            <Text style={[styles.logo, { color: c.primary }]}>SWIPEFLIX</Text>
-            <Text style={[styles.tagline, { color: c.muted }]}>คืนนี้ดูอะไรดี</Text>
+            <Text style={[styles.logo, { color: c.primary }]}>SWIPEPLAY</Text>
+            <Text style={[styles.tagline, { color: c.muted }]}>วันนี้เล่นอะไรดี</Text>
           </View>
 
           <View style={styles.form}>

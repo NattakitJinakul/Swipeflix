@@ -1,7 +1,22 @@
 /**
- * Library context: liked / watched / disliked with optimistic local updates + Firestore sync.
- * No signed-in user => in-memory only (never crashes). Undo reverses the last action.
+ * Library context: liked (อยากเล่น) / played (เล่นแล้ว) / disliked with optimistic local
+ * updates + Firestore sync. No signed-in user => in-memory only (never crashes; guest-safe).
+ * Undo reverses the last action.
+ *
+ * Firestore subcollections under the user doc, one per status:
+ *   users/{uid}/liked/{gameId}, users/{uid}/played/{gameId}, users/{uid}/disliked/{gameId}
+ * liked/played store GameLite; disliked stores just the id.
+ * (Firestore CRUD is inlined here rather than in firebase/library.ts, which is kept as-is for
+ *  the preserved movie build on branch swipeflix-movie.)
  */
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore';
 import React, {
   createContext,
   useCallback,
@@ -12,37 +27,32 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import {
-  addDisliked,
-  addToLibrary,
-  fetchLibrary,
-  moveStatus,
-  removeFromLibrary,
-  type MovieStatus,
-} from '../firebase/library';
-import type { MovieLite } from '../types/movie';
+import { db } from '../firebase/config';
+import type { GameLite } from '../types/game';
 import { useAuth } from './auth';
+
+export type GameStatus = 'liked' | 'played' | 'disliked';
 
 /** Where an action originated, so a screen can scope Undo to its own actions. */
 export type ActionOrigin = 'deck' | 'detail';
 
 type LastAction = { origin: ActionOrigin } & (
-  | { kind: 'like'; movie: MovieLite }
-  | { kind: 'watched'; movie: MovieLite }
+  | { kind: 'like'; game: GameLite }
+  | { kind: 'played'; game: GameLite }
   | { kind: 'dislike'; id: number }
-  | { kind: 'move'; movie: MovieLite; from: MovieStatus; to: MovieStatus }
+  | { kind: 'move'; game: GameLite; from: GameStatus; to: GameStatus }
 );
 
 export type LibraryContextValue = {
-  liked: MovieLite[];
-  watched: MovieLite[];
+  liked: GameLite[];
+  played: GameLite[];
   disliked: number[];
   loading: boolean;
-  like: (movie: MovieLite, origin?: ActionOrigin) => void;
+  like: (game: GameLite, origin?: ActionOrigin) => void;
   dislike: (id: number, origin?: ActionOrigin) => void;
-  markWatched: (movie: MovieLite, origin?: ActionOrigin) => void;
-  remove: (id: number, status: MovieStatus) => void;
-  moveToWatched: (movie: MovieLite) => void;
+  markPlayed: (game: GameLite, origin?: ActionOrigin) => void;
+  remove: (id: number, status: GameStatus) => void;
+  moveToPlayed: (game: GameLite) => void;
   undo: () => void;
   canUndo: boolean;
   /** Origin of the last undoable action (null when none). Consumers gate Undo on this. */
@@ -51,24 +61,66 @@ export type LibraryContextValue = {
 
 const LibraryContext = createContext<LibraryContextValue | null>(null);
 
+// ---- Firestore helpers (inlined; games, played subcollection) ----
+
+const itemRef = (uid: string, status: GameStatus, id: number | string) =>
+  doc(db, 'users', uid, status, String(id));
+
+const addToLibrary = (uid: string, game: GameLite, status: 'liked' | 'played') =>
+  setDoc(itemRef(uid, status, game.id), { ...game, addedAt: serverTimestamp() });
+
+const addDisliked = (uid: string, id: number) =>
+  setDoc(itemRef(uid, 'disliked', id), { id, at: serverTimestamp() });
+
+const removeFromLibrary = (uid: string, id: number, status: GameStatus) =>
+  deleteDoc(itemRef(uid, status, id));
+
+const moveStatus = async (uid: string, game: GameLite, from: GameStatus, to: GameStatus) => {
+  await removeFromLibrary(uid, game.id, from);
+  if (to === 'disliked') await addDisliked(uid, game.id);
+  else await addToLibrary(uid, game, to);
+};
+
+const toLite = (data: Record<string, unknown>): GameLite => ({
+  id: Number(data.id),
+  name: String(data.name ?? ''),
+  image: (data.image as string | null) ?? null,
+  genre: String(data.genre ?? ''),
+  platform: String(data.platform ?? ''),
+  year: data.year != null ? Number(data.year) : null,
+});
+
+async function fetchLibrary(uid: string) {
+  const [likedSnap, playedSnap, dislikedSnap] = await Promise.all([
+    getDocs(collection(db, 'users', uid, 'liked')),
+    getDocs(collection(db, 'users', uid, 'played')),
+    getDocs(collection(db, 'users', uid, 'disliked')),
+  ]);
+  return {
+    liked: likedSnap.docs.map((d) => toLite(d.data())),
+    played: playedSnap.docs.map((d) => toLite(d.data())),
+    disliked: dislikedSnap.docs.map((d) => Number(d.data().id ?? d.id)),
+  };
+}
+
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
 
-  const [liked, setLiked] = useState<MovieLite[]>([]);
-  const [watched, setWatched] = useState<MovieLite[]>([]);
+  const [liked, setLiked] = useState<GameLite[]>([]);
+  const [played, setPlayed] = useState<GameLite[]>([]);
   const [disliked, setDisliked] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [lastActionOrigin, setLastActionOrigin] = useState<ActionOrigin | null>(null);
   const lastAction = useRef<LastAction | null>(null);
 
-  // Load from Firestore on sign-in; clear on sign-out.
+  // Load from Firestore on sign-in; clear on sign-out (guest = in-memory).
   useEffect(() => {
     let active = true;
     if (!uid) {
       setLiked([]);
-      setWatched([]);
+      setPlayed([]);
       setDisliked([]);
       return;
     }
@@ -77,7 +129,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       .then((snap) => {
         if (!active) return;
         setLiked(snap.liked);
-        setWatched(snap.watched);
+        setPlayed(snap.played);
         setDisliked(snap.disliked);
       })
       .catch((e) => console.warn('[library] load failed', e))
@@ -94,23 +146,19 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   };
 
   const like = useCallback(
-    (movie: MovieLite, origin: ActionOrigin = 'detail') => {
-      setLiked((prev) =>
-        prev.some((m) => m.id === movie.id) ? prev : [movie, ...prev]
-      );
-      record({ kind: 'like', movie, origin });
-      if (uid) void addToLibrary(uid, movie, 'liked').catch((e) => console.warn('[library] write failed', e));
+    (game: GameLite, origin: ActionOrigin = 'detail') => {
+      setLiked((prev) => (prev.some((g) => g.id === game.id) ? prev : [game, ...prev]));
+      record({ kind: 'like', game, origin });
+      if (uid) void addToLibrary(uid, game, 'liked').catch((e) => console.warn('[library] write failed', e));
     },
     [uid]
   );
 
-  const markWatched = useCallback(
-    (movie: MovieLite, origin: ActionOrigin = 'detail') => {
-      setWatched((prev) =>
-        prev.some((m) => m.id === movie.id) ? prev : [movie, ...prev]
-      );
-      record({ kind: 'watched', movie, origin });
-      if (uid) void addToLibrary(uid, movie, 'watched').catch((e) => console.warn('[library] write failed', e));
+  const markPlayed = useCallback(
+    (game: GameLite, origin: ActionOrigin = 'detail') => {
+      setPlayed((prev) => (prev.some((g) => g.id === game.id) ? prev : [game, ...prev]));
+      record({ kind: 'played', game, origin });
+      if (uid) void addToLibrary(uid, game, 'played').catch((e) => console.warn('[library] write failed', e));
     },
     [uid]
   );
@@ -125,23 +173,21 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   );
 
   const remove = useCallback(
-    (id: number, status: MovieStatus) => {
-      if (status === 'liked') setLiked((p) => p.filter((m) => m.id !== id));
-      else if (status === 'watched') setWatched((p) => p.filter((m) => m.id !== id));
+    (id: number, status: GameStatus) => {
+      if (status === 'liked') setLiked((p) => p.filter((g) => g.id !== id));
+      else if (status === 'played') setPlayed((p) => p.filter((g) => g.id !== id));
       else setDisliked((p) => p.filter((x) => x !== id));
       if (uid) void removeFromLibrary(uid, id, status).catch((e) => console.warn('[library] write failed', e));
     },
     [uid]
   );
 
-  const moveToWatched = useCallback(
-    (movie: MovieLite) => {
-      setLiked((p) => p.filter((m) => m.id !== movie.id));
-      setWatched((prev) =>
-        prev.some((m) => m.id === movie.id) ? prev : [movie, ...prev]
-      );
-      record({ kind: 'move', movie, from: 'liked', to: 'watched', origin: 'detail' });
-      if (uid) void moveStatus(uid, movie, 'liked', 'watched').catch((e) => console.warn('[library] write failed', e));
+  const moveToPlayed = useCallback(
+    (game: GameLite) => {
+      setLiked((p) => p.filter((g) => g.id !== game.id));
+      setPlayed((prev) => (prev.some((g) => g.id === game.id) ? prev : [game, ...prev]));
+      record({ kind: 'move', game, from: 'liked', to: 'played', origin: 'detail' });
+      if (uid) void moveStatus(uid, game, 'liked', 'played').catch((e) => console.warn('[library] write failed', e));
     },
     [uid]
   );
@@ -151,24 +197,21 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     if (!action) return;
     switch (action.kind) {
       case 'like':
-        setLiked((p) => p.filter((m) => m.id !== action.movie.id));
-        if (uid) void removeFromLibrary(uid, action.movie.id, 'liked').catch((e) => console.warn('[library] write failed', e));
+        setLiked((p) => p.filter((g) => g.id !== action.game.id));
+        if (uid) void removeFromLibrary(uid, action.game.id, 'liked').catch((e) => console.warn('[library] write failed', e));
         break;
-      case 'watched':
-        setWatched((p) => p.filter((m) => m.id !== action.movie.id));
-        if (uid) void removeFromLibrary(uid, action.movie.id, 'watched').catch((e) => console.warn('[library] write failed', e));
+      case 'played':
+        setPlayed((p) => p.filter((g) => g.id !== action.game.id));
+        if (uid) void removeFromLibrary(uid, action.game.id, 'played').catch((e) => console.warn('[library] write failed', e));
         break;
       case 'dislike':
         setDisliked((p) => p.filter((x) => x !== action.id));
         if (uid) void removeFromLibrary(uid, action.id, 'disliked').catch((e) => console.warn('[library] write failed', e));
         break;
       case 'move':
-        setWatched((p) => p.filter((m) => m.id !== action.movie.id));
-        setLiked((prev) =>
-          prev.some((m) => m.id === action.movie.id) ? prev : [action.movie, ...prev]
-        );
-        if (uid)
-          void moveStatus(uid, action.movie, action.to, action.from).catch((e) => console.warn('[library] write failed', e));
+        setPlayed((p) => p.filter((g) => g.id !== action.game.id));
+        setLiked((prev) => (prev.some((g) => g.id === action.game.id) ? prev : [action.game, ...prev]));
+        if (uid) void moveStatus(uid, action.game, action.to, action.from).catch((e) => console.warn('[library] write failed', e));
         break;
     }
     lastAction.current = null;
@@ -179,19 +222,19 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const value = useMemo<LibraryContextValue>(
     () => ({
       liked,
-      watched,
+      played,
       disliked,
       loading,
       like,
       dislike,
-      markWatched,
+      markPlayed,
       remove,
-      moveToWatched,
+      moveToPlayed,
       undo,
       canUndo,
       lastActionOrigin,
     }),
-    [liked, watched, disliked, loading, like, dislike, markWatched, remove, moveToWatched, undo, canUndo, lastActionOrigin]
+    [liked, played, disliked, loading, like, dislike, markPlayed, remove, moveToPlayed, undo, canUndo, lastActionOrigin]
   );
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;

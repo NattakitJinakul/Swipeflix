@@ -17,11 +17,11 @@ import Animated, {
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import type { MovieLite } from '@/src/types/movie';
-import { posterUri } from './tmdb-image';
+import type { GameLite } from '@/src/types/game';
+import { gameImage } from './tmdb-image';
 
 export type SwipeCardProps = {
-  movie: MovieLite;
+  game: GameLite;
   /** Genre display names (parent resolves ids -> names). */
   genres?: string[];
   /** Horizontal drag offset of the top card, in px. Drives LIKE / NOPE overlays. */
@@ -33,7 +33,7 @@ export type SwipeCardProps = {
 };
 
 export function SwipeCard({
-  movie,
+  game,
   genres,
   dragX,
   dragY,
@@ -67,7 +67,7 @@ export function SwipeCard({
     transform: [{ scale: interpolate(y.value, [-swipeThreshold, -10], [1, 0.6], 'clamp') }],
   }));
 
-  const uri = posterUri(movie.poster, 'w500');
+  const uri = gameImage(game.image);
 
   return (
     <View style={[styles.card, { backgroundColor: c.surface }]}>
@@ -81,7 +81,7 @@ export function SwipeCard({
         />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.noPoster, { backgroundColor: c.surface }]}>
-          <Ionicons name="film-outline" size={64} color={c.muted} />
+          <Ionicons name="game-controller-outline" size={64} color={c.muted} />
         </View>
       )}
 
@@ -93,17 +93,30 @@ export function SwipeCard({
         pointerEvents="none"
       />
 
-      {/* rating badge */}
-      <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
-        <Ionicons name="star" size={13} color="#F5C518" />
-        <Text style={styles.ratingText}>{movie.rating.toFixed(1)}</Text>
+      {/* platform + genre pill */}
+      <View style={styles.topBadges} pointerEvents="none">
+        <View style={[styles.ratingBadge, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+          <Ionicons
+            name={game.platform.toLowerCase().includes('browser') ? 'globe-outline' : 'desktop-outline'}
+            size={13}
+            color="#fff"
+          />
+          <Text style={styles.ratingText}>
+            {game.platform.toLowerCase().includes('browser') ? 'Browser' : 'PC'}
+          </Text>
+        </View>
+        {game.genre ? (
+          <View style={styles.mcPill}>
+            <Text style={styles.mcText}>{game.genre}</Text>
+          </View>
+        ) : null}
       </View>
 
       {/* title + meta */}
       <View style={styles.info} pointerEvents="none">
         <Text style={styles.title} numberOfLines={2}>
-          {movie.title}
-          {movie.year ? <Text style={styles.year}>{`  (${movie.year})`}</Text> : null}
+          {game.name}
+          {game.year ? <Text style={styles.year}>{`  (${game.year})`}</Text> : null}
         </Text>
         {genres && genres.length > 0 ? (
           <View style={styles.chipRow}>
@@ -131,8 +144,8 @@ export function SwipeCard({
       </Animated.View>
       <Animated.View style={[styles.overlay, styles.overlayTop, seenStyle]} pointerEvents="none">
         <View style={[styles.badge, { backgroundColor: c.watched }]}>
-          <Ionicons name="eye" size={22} color="#fff" />
-          <Text style={styles.badgeText}>เคยดู</Text>
+          <Ionicons name="game-controller" size={22} color="#fff" />
+          <Text style={styles.badgeText}>เคยเล่น</Text>
         </View>
       </Animated.View>
     </View>
@@ -158,10 +171,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '42%',
   },
-  ratingBadge: {
+  topBadges: {
     position: 'absolute',
     top: 12,
     left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -170,6 +188,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   ratingText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  mcPill: {
+    backgroundColor: '#66CC33',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  mcText: { color: '#0A2200', fontWeight: '800', fontSize: 12 },
   info: { position: 'absolute', left: 16, right: 16, bottom: 16 },
   title: { color: '#fff', fontSize: 24, fontWeight: '800' },
   year: { fontSize: 18, fontWeight: '600', color: 'rgba(255,255,255,0.8)' },

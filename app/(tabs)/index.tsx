@@ -1,18 +1,19 @@
 /**
- * Swipe screen — core Tinder-style deck. Wires CardStack to useDeck + useLibrary:
- * right = like (+ confetti + haptic), left = dislike, up/button = watched. Undo, filter bar
- * (genre chips + rating), deck-source toggle, surprise-me, empty state, and a free-tier
- * swipe gate (canSwipe). See docs/02-screens.md + docs/11-enhancements.md.
+ * Swipe screen — core Tinder-style game deck. Wires CardStack to useDeck + useLibrary:
+ * right = like (+ confetti + haptic), left = dislike, up/button = played. Undo, filter bar
+ * (category chips + platform toggle), deck-source toggle, surprise-me, empty/error states.
+ * Guest-first: guests browse/swipe freely; like/played prompt login (no save). A free-tier
+ * swipe quota gate applies only to signed-in users.
  */
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ActionButton, ACTION_COLORS, ACTION_ICONS } from '@/components/ActionButton';
+import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
 import { GenreChip } from '@/components/GenreChip';
@@ -21,21 +22,27 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDeck, type DeckSource } from '@/src/hooks/useDeck';
 import { useAuth } from '@/src/store/auth';
 import { useLibrary } from '@/src/store/library';
-import type { MovieLite } from '@/src/types/movie';
-import { GENRE_MAP, genreNames } from '@/src/utils/genres';
-import { getPlan } from '@/src/utils/plans';
+import type { GameLite } from '@/src/types/game';
+import { CATEGORIES, categoryLabel } from '@/src/utils/genres';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const SOURCES: { key: DeckSource; label: string }[] = [
-  { key: 'trending', label: 'Trending' },
-  { key: 'top_rated', label: 'Top rated' },
-  { key: 'now_playing', label: 'Now playing' },
+  { key: 'popular', label: 'ยอดนิยม' },
+  { key: 'new', label: 'ใหม่' },
+  { key: 'relevance', label: 'แนะนำ' },
   { key: 'for_you', label: 'ตามที่ชอบ' },
 ];
 
-const RATING_STEPS = [6, 7, 8];
-const GENRE_ENTRIES = Object.entries(GENRE_MAP).map(([id, name]) => ({ id: Number(id), name }));
+type PlatformKey = 'all' | 'pc' | 'browser';
+const PLATFORMS: { key: PlatformKey; label: string }[] = [
+  { key: 'all', label: 'ทั้งหมด' },
+  { key: 'pc', label: 'PC' },
+  { key: 'browser', label: 'เบราว์เซอร์' },
+];
+
+// A trimmed chip set (the full list is long); onboarding/preferences expose all CATEGORIES.
+const FILTER_CATEGORIES = CATEGORIES.slice(0, 16);
 
 export default function SwipeScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -43,28 +50,42 @@ export default function SwipeScreen() {
   const insets = useSafeAreaInsets();
 
   const deck = useDeck();
-  const { plan } = useAuth();
-  const { like, dislike, markWatched, undo, canUndo, lastActionOrigin } = useLibrary();
+  const { plan, isGuest } = useAuth();
+  const { like, dislike, markPlayed, undo, canUndo, lastActionOrigin } = useLibrary();
 
-  // Swipe gate: limit from plan (null = unlimited for plus/pro). Count in memory (resets on restart).
-  const swipeLimit = getPlan(plan).swipeLimit;
+  // Swipe quota applies ONLY to signed-in users; guests browse freely (unlimited).
+  const swipeLimit = getSwipeLimit(plan);
   const [swipeCount, setSwipeCount] = useState(0);
-  const allowed = swipeLimit == null || swipeCount < swipeLimit;
+  const allowed = isGuest || swipeLimit == null || swipeCount < swipeLimit;
 
   const [showFilters, setShowFilters] = useState(false);
   const [burst, setBurst] = useState(0);
 
   const bump = useCallback(() => setSwipeCount((n) => n + 1), []);
 
+  // Guest save prompt — like/played require login. Returns true when the action must be blocked.
+  const promptLogin = useCallback((): boolean => {
+    if (!isGuest) return false;
+    Alert.alert('เข้าสู่ระบบ', 'บันทึกเกมที่ชอบต้องเข้าสู่ระบบก่อน', [
+      { text: 'ยกเลิก', style: 'cancel' },
+      { text: 'เข้าสู่ระบบ', onPress: () => router.push('/(auth)/login') },
+    ]);
+    return true;
+  }, [isGuest]);
+
   const handleLike = useCallback(
-    (movie: MovieLite) => {
-      like(movie, 'deck');
+    (game: GameLite) => {
+      if (promptLogin()) {
+        deck.advance();
+        return;
+      }
+      like(game, 'deck');
       bump();
       setBurst((b) => b + 1);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       deck.advance();
     },
-    [like, bump, deck],
+    [promptLogin, like, bump, deck],
   );
   const handleDislike = useCallback(
     (id: number) => {
@@ -74,16 +95,19 @@ export default function SwipeScreen() {
     },
     [dislike, bump, deck],
   );
-  const handleWatched = useCallback(
-    (movie: MovieLite) => {
-      markWatched(movie, 'deck');
+  const handlePlayed = useCallback(
+    (game: GameLite) => {
+      if (promptLogin()) {
+        deck.advance();
+        return;
+      }
+      markPlayed(game, 'deck');
       bump();
       deck.advance();
     },
-    [markWatched, bump, deck],
+    [promptLogin, markPlayed, bump, deck],
   );
 
-  // L3: Undo only for deck-origin actions — a detail-screen like won't be reversed here.
   const canUndoDeck = canUndo && lastActionOrigin === 'deck';
 
   const handleUndo = useCallback(() => {
@@ -98,28 +122,31 @@ export default function SwipeScreen() {
     if (!pool.length) return;
     const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 20))];
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    router.push(`/movie/${pick.id}`);
+    router.push(`/game/${pick.id}`);
   }, [deck]);
 
-  const openDetail = useCallback((id: number) => router.push(`/movie/${id}`), []);
+  const openDetail = useCallback((id: number) => router.push(`/game/${id}`), []);
 
-  const toggleGenre = useCallback(
-    (id: number) => {
-      const has = deck.filters.genres.includes(id);
+  const toggleCategory = useCallback(
+    (slug: string) => {
+      const has = deck.filters.categories.includes(slug);
       deck.setFilters({
         ...deck.filters,
-        genres: has ? deck.filters.genres.filter((g) => g !== id) : [...deck.filters.genres, id],
+        categories: has
+          ? deck.filters.categories.filter((s) => s !== slug)
+          : [...deck.filters.categories, slug],
       });
     },
     [deck],
   );
 
-  const setRating = useCallback(
-    (r: number) => {
-      deck.setFilters({ ...deck.filters, minRating: deck.filters.minRating === r ? undefined : r });
+  const setPlatform = useCallback(
+    (p: PlatformKey) => {
+      deck.setFilters({ ...deck.filters, platform: p === 'all' ? undefined : p });
     },
     [deck],
   );
+  const currentPlatform: PlatformKey = deck.filters.platform ?? 'all';
 
   const deckEmpty = !deck.loading && deck.deck.length - deck.index <= 0;
 
@@ -127,7 +154,7 @@ export default function SwipeScreen() {
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top + 8 }]}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={[styles.brand, { color: c.primary }]}>Swipeflix</Text>
+        <Text style={[styles.brand, { color: c.primary }]}>Swipeplay</Text>
         <View style={styles.topActions}>
           <IconButton icon="shuffle" color={c.text} onPress={surpriseMe} />
           <IconButton
@@ -170,12 +197,12 @@ export default function SwipeScreen() {
             style={styles.hScroll}
             contentContainerStyle={styles.filterRow}
           >
-            {GENRE_ENTRIES.map((g) => (
+            {FILTER_CATEGORIES.map((slug) => (
               <GenreChip
-                key={g.id}
-                label={g.name}
-                selected={deck.filters.genres.includes(g.id)}
-                onToggle={() => toggleGenre(g.id)}
+                key={slug}
+                label={categoryLabel(slug)}
+                selected={deck.filters.categories.includes(slug)}
+                onToggle={() => toggleCategory(slug)}
               />
             ))}
           </ScrollView>
@@ -185,22 +212,19 @@ export default function SwipeScreen() {
             style={styles.hScroll}
             contentContainerStyle={styles.filterRow}
           >
-            {RATING_STEPS.map((r) => (
+            {PLATFORMS.map((p) => (
               <Pressable
-                key={r}
-                onPress={() => setRating(r)}
+                key={p.key}
+                onPress={() => setPlatform(p.key)}
                 style={[
                   styles.miniChip,
-                  { backgroundColor: deck.filters.minRating === r ? c.primary : c.surface },
+                  { backgroundColor: currentPlatform === p.key ? c.primary : c.surface },
                 ]}
               >
                 <Text
-                  style={{
-                    color: deck.filters.minRating === r ? '#fff' : c.muted,
-                    fontWeight: '700',
-                  }}
+                  style={{ color: currentPlatform === p.key ? '#fff' : c.muted, fontWeight: '700' }}
                 >
-                  ⭐ {r}+
+                  {p.label}
                 </Text>
               </Pressable>
             ))}
@@ -214,7 +238,7 @@ export default function SwipeScreen() {
           <EmptyState
             icon="lock-closed-outline"
             title="ปัดครบโควตาวันนี้แล้ว"
-            subtitle={`ปัดได้ ${swipeLimit == null ? 'ไม่จำกัด' : `${swipeLimit} เรื่อง/วัน`} — อัปเกรดเพื่อปัดไม่จำกัด`}
+            subtitle={`ปัดได้ ${swipeLimit == null ? 'ไม่จำกัด' : `${swipeLimit} เกม/วัน`} — อัปเกรดเพื่อปัดไม่จำกัด`}
             actionLabel="ดูแผน Plus"
             onAction={() => router.push('/(auth)/pricing')}
           />
@@ -222,7 +246,7 @@ export default function SwipeScreen() {
           <EmptyState
             icon="cloud-offline-outline"
             title="โหลดไม่สำเร็จ"
-            subtitle="ตรวจการเชื่อมต่ออินเทอร์เน็ตหรือ TMDB token แล้วลองใหม่"
+            subtitle="ตรวจการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่"
             actionLabel="ลองใหม่"
             onAction={deck.retry}
           />
@@ -230,18 +254,18 @@ export default function SwipeScreen() {
           <EmptyState
             icon="albums-outline"
             title="ดูครบแล้ว!"
-            subtitle="ลองเปลี่ยน filter หรือแหล่ง deck เพื่อเจอหนังใหม่ ๆ"
-            actionLabel="โหลดเพิ่ม"
+            subtitle="ลองเปลี่ยน filter หรือแหล่ง deck เพื่อเจอเกมใหม่ ๆ"
+            actionLabel="โหลดใหม่"
             onAction={deck.reload}
           />
         ) : (
           <CardStack
             key={`${deck.source}-${deck.index}`}
-            movies={deck.deck.slice(deck.index)}
-            genresOf={(m) => genreNames(m.genreIds)}
+            games={deck.deck.slice(deck.index)}
+            genresOf={(g) => (g.genre ? [g.genre] : [])}
             onSwipeLeft={handleDislike}
             onSwipeRight={handleLike}
-            onSwipeUp={handleWatched}
+            onSwipeUp={handlePlayed}
             onTapCard={openDetail}
           />
         )}
@@ -251,22 +275,22 @@ export default function SwipeScreen() {
       {allowed && !deck.error && !deckEmpty ? (
         <View style={styles.actions}>
           <ActionButton
-            icon={ACTION_ICONS.dislike}
+            icon="thumbs-down"
             color={ACTION_COLORS.dislike}
             onPress={() => deck.current && handleDislike(deck.current.id)}
           />
           <ActionButton
-            icon={ACTION_ICONS.watched}
+            icon="game-controller"
             color={ACTION_COLORS.watched}
-            onPress={() => deck.current && handleWatched(deck.current)}
+            onPress={() => deck.current && handlePlayed(deck.current)}
           />
           <ActionButton
-            icon={ACTION_ICONS.like}
+            icon="heart"
             color={ACTION_COLORS.like}
             onPress={() => deck.current && handleLike(deck.current)}
           />
           <ActionButton
-            icon={ACTION_ICONS.undo}
+            icon="arrow-undo"
             color={ACTION_COLORS.undo}
             disabled={!canUndoDeck}
             onPress={handleUndo}
@@ -289,6 +313,11 @@ export default function SwipeScreen() {
   );
 }
 
+// Free tier = 40 swipes/session; paid tiers unlimited (null).
+function getSwipeLimit(plan: string): number | null {
+  return plan === 'free' ? 40 : null;
+}
+
 function IconButton({
   icon,
   color,
@@ -304,7 +333,6 @@ function IconButton({
     </Pressable>
   );
 }
-
 
 const styles = StyleSheet.create({
   root: { flex: 1 },

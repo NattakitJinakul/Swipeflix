@@ -10,45 +10,33 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/src/store/auth';
 import { LibraryProvider } from '@/src/store/library';
-import { SettingsProvider, useSettings } from '@/src/store/settings';
+import { SettingsProvider } from '@/src/store/settings';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-// (auth) screens a not-yet-onboarded user is allowed to sit on (the signup funnel).
-const FUNNEL = ['signup', 'pricing', 'onboarding'];
-
 /**
- * Auth gate. Kept group-aware so the signup->pricing->onboarding funnel isn't interrupted.
- * `onboarded` reads profile.onboarded (cold start) OR live favoriteGenres from settings
- * (so completing onboarding flips the gate without a stale-profile bounce).
+ * Guest-first gate: an unauthenticated user lands on (tabs) and can browse/swipe freely —
+ * NO login wall, NO forced onboarding. The (auth) group stays reachable (login/signup) but
+ * isn't a wall; onboarding is reachable from Profile. When a user IS signed in and still
+ * sitting in the (auth) funnel, bounce them into the tabs.
  */
 function RootNavigator() {
   const colorScheme = useColorScheme();
-  const { user, profile, loading } = useAuth();
-  const { favoriteGenres } = useSettings();
+  const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-
-  const onboarded =
-    !!(profile as { onboarded?: boolean } | null)?.onboarded || favoriteGenres.length >= 3;
 
   useEffect(() => {
     if (loading) return;
     const segs = segments as string[];
     const inAuth = segs[0] === '(auth)';
-    if (!user) {
-      if (!inAuth) router.replace('/(auth)/login');
-      return;
-    }
-    if (!onboarded) {
-      const inFunnel = inAuth && FUNNEL.includes(String(segs[1]));
-      if (!inFunnel) router.replace('/(auth)/onboarding');
-      return;
-    }
-    if (inAuth) router.replace('/(tabs)');
-  }, [user, onboarded, loading, segments, router]);
+    // Guests: no redirect. Signed-in users sitting on the login/signup LANDING go to tabs —
+    // but keep pricing/onboarding reachable while signed in (upgrade + preferences flows).
+    const onAuthLanding = inAuth && (segs[1] === 'login' || segs[1] === 'signup' || segs[1] === undefined);
+    if (user && onAuthLanding) router.replace('/(tabs)');
+  }, [user, loading, segments, router]);
 
   const c = Colors[colorScheme ?? 'dark'];
 
@@ -72,7 +60,7 @@ function RootNavigator() {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
-      <Stack.Screen name="movie/[id]" options={{ headerShown: false, presentation: 'card' }} />
+      <Stack.Screen name="game/[id]" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );

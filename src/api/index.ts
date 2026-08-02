@@ -1,2 +1,2 @@
-export * from './tmdb';
+export * from './freetogame';
 export * from './endpoints';

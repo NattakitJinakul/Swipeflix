@@ -11,7 +11,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSettings } from '@/src/store';
 import type { ThemePref } from '@/src/types/user';
-import { GENRE_MAP } from '@/src/utils/genres';
+import { CATEGORIES, categoryLabel } from '@/src/utils/genres';
 
 type Colorset = (typeof Colors)['dark'];
 
@@ -34,8 +34,6 @@ const SENSITIVITY_OPTS = [
   { value: 'high', label: 'สูง' },
 ];
 
-const GENRE_ENTRIES = Object.entries(GENRE_MAP).map(([id, name]) => ({ id: Number(id), name }));
-
 export default function PreferencesScreen() {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
@@ -57,11 +55,11 @@ export default function PreferencesScreen() {
   const [sensitivity, setSensitivity] = useState('medium');
   const [hideAdult, setHideAdult] = useState(true);
 
-  const toggleGenre = (id: number) => {
+  const toggleGenre = (slug: string) => {
     setFavoriteGenres(
-      favoriteGenres.includes(id)
-        ? favoriteGenres.filter((g) => g !== id)
-        : [...favoriteGenres, id],
+      favoriteGenres.includes(slug)
+        ? favoriteGenres.filter((g) => g !== slug)
+        : [...favoriteGenres, slug],
     );
   };
 
@@ -92,14 +90,14 @@ export default function PreferencesScreen() {
 
       {/* Favorite genres */}
       <View style={styles.genreSection}>
-        <Text style={[styles.rowLabel, { color: c.muted }]}>แนวหนังที่ชอบ</Text>
+        <Text style={[styles.rowLabel, { color: c.muted }]}>แนวเกมที่ชอบ</Text>
         <View style={styles.chips}>
-          {GENRE_ENTRIES.map((g) => (
+          {CATEGORIES.map((slug) => (
             <GenreChip
-              key={g.id}
-              label={g.name}
-              selected={favoriteGenres.includes(g.id)}
-              onToggle={() => toggleGenre(g.id)}
+              key={slug}
+              label={categoryLabel(slug)}
+              selected={favoriteGenres.includes(slug)}
+              onToggle={() => toggleGenre(slug)}
             />
           ))}
         </View>

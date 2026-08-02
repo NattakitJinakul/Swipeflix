@@ -15,11 +15,11 @@ import {
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import type { MovieLite } from '@/src/types/movie';
-import { posterUri } from './tmdb-image';
+import type { GameLite } from '@/src/types/game';
+import { gameImage } from './tmdb-image';
 
 export type PosterGridProps = {
-  movies: MovieLite[];
+  items: GameLite[];
   onPress: (id: number) => void;
   numColumns?: number;
   ListEmptyComponent?: React.ComponentProps<typeof FlatList>['ListEmptyComponent'];
@@ -30,9 +30,9 @@ export type PosterGridProps = {
 const GAP = 10;
 
 export function PosterGrid({
-  movies,
+  items,
   onPress,
-  numColumns = 3,
+  numColumns = 2,
   ListEmptyComponent,
   ListHeaderComponent,
   contentContainerStyle,
@@ -40,8 +40,8 @@ export function PosterGrid({
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
 
-  const renderItem = ({ item }: ListRenderItemInfo<MovieLite>) => {
-    const uri = posterUri(item.poster, 'w342');
+  const renderItem = ({ item }: ListRenderItemInfo<GameLite>) => {
+    const uri = gameImage(item.image);
     return (
       <Pressable
         style={({ pressed }) => [
@@ -61,9 +61,9 @@ export function PosterGrid({
             />
           ) : (
             <View style={styles.noPoster}>
-              <Ionicons name="film-outline" size={32} color={c.muted} />
+              <Ionicons name="game-controller-outline" size={32} color={c.muted} />
               <Text style={[styles.noPosterText, { color: c.muted }]} numberOfLines={2}>
-                {item.title}
+                {item.name}
               </Text>
             </View>
           )}
@@ -75,8 +75,8 @@ export function PosterGrid({
   return (
     <FlatList
       key={`cols-${numColumns}`}
-      data={movies}
-      keyExtractor={(m) => String(m.id)}
+      data={items}
+      keyExtractor={(g) => String(g.id)}
       numColumns={numColumns}
       renderItem={renderItem}
       columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   row: { gap: GAP },
   cell: {},
   poster: {
-    aspectRatio: 2 / 3,
+    aspectRatio: 16 / 9,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
