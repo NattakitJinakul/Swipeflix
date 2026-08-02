@@ -4,10 +4,12 @@
  */
 import { igdb, igdbImage } from './igdb';
 import type {
+  CompanyInfo,
   GameDetail,
   GameLite,
   IgdbGame,
   IgdbGameDetail,
+  Ref,
 } from '../types/game';
 
 const LIST_FIELDS =
@@ -124,6 +126,25 @@ export async function guessGames(): Promise<GuessGame[]> {
 
 type IgdbImageRefLite = { id?: number; url: string };
 
+/** Screenshots for a specific set of game ids (for "guess from my Likes"). Empty on no ids/failure. */
+export async function screenshotsForGames(ids: number[]): Promise<GuessGame[]> {
+  const list = ids.slice(0, 50);
+  if (!list.length) return [];
+  const body =
+    'fields name, screenshots.url; ' +
+    `where id = (${list.join(',')}) & screenshots != null; limit ${list.length};`;
+  const raw = await igdb<(IgdbGame & { screenshots?: IgdbImageRefLite[] })[]>('/games', body);
+  return (Array.isArray(raw) ? raw : [])
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      screenshots: (r.screenshots ?? [])
+        .map((s) => igdbImage(s.url, 't_screenshot_big'))
+        .filter((u): u is string => !!u),
+    }))
+    .filter((g) => g.screenshots.length > 0);
+}
+
 /** ~40 popular games (cover + rating) for the "VS ตัวต่อตัว" head-to-head. */
 export async function versusGames(): Promise<GameLite[]> {
   const body =
@@ -139,29 +160,35 @@ export async function versusGames(): Promise<GameLite[]> {
 export async function gameDetail(id: number): Promise<GameDetail> {
   const body =
     'fields name, summary, storyline, cover.url, rating, rating_count, first_release_date, ' +
-    'genres.name, platforms.name, involved_companies.company.name, involved_companies.developer, ' +
-    'involved_companies.publisher, screenshots.url, videos.video_id, similar_games.name, ' +
-    'similar_games.cover.url, similar_games.rating, websites.url, websites.type; ' +
+    'genres.name, platforms.name, involved_companies.company.id, involved_companies.company.name, ' +
+    'involved_companies.developer, involved_companies.publisher, screenshots.url, videos.video_id, ' +
+    'similar_games.name, similar_games.cover.url, similar_games.rating, websites.url, websites.type; ' +
     `where id = ${id};`;
   const raw = (await igdb<IgdbGameDetail[]>('/games', body))?.[0];
   if (!raw) throw new Error('IGDB detail not found');
 
   const lite = toGameLite(raw);
   const companies = raw.involved_companies ?? [];
-  const developers = companies
-    .filter((c) => c.developer && c.company?.name)
-    .map((c) => c.company!.name as string);
-  const publishers = companies
-    .filter((c) => c.publisher && c.company?.name)
-    .map((c) => c.company!.name as string);
+  const developerRefs: Ref[] = companies
+    .filter((c) => c.developer && c.company?.id && c.company?.name)
+    .map((c) => ({ id: c.company!.id as number, name: c.company!.name as string }));
+  const publisherRefs: Ref[] = companies
+    .filter((c) => c.publisher && c.company?.id && c.company?.name)
+    .map((c) => ({ id: c.company!.id as number, name: c.company!.name as string }));
+  const genreRefs: Ref[] = (raw.genres ?? []).map((g) => ({ id: g.id, name: g.name }));
+  const platformRefs: Ref[] = (raw.platforms ?? []).map((p) => ({ id: p.id, name: p.name }));
 
   return {
     ...lite,
     summary: raw.summary ?? raw.storyline ?? '',
-    developers,
-    publishers,
-    genres: (raw.genres ?? []).map((g) => g.name),
-    platforms: (raw.platforms ?? []).map((p) => p.name),
+    developers: developerRefs.map((r) => r.name),
+    publishers: publisherRefs.map((r) => r.name),
+    genres: genreRefs.map((r) => r.name),
+    platforms: platformRefs.map((r) => r.name),
+    developerRefs,
+    publisherRefs,
+    genreRefs,
+    platformRefs,
     screenshots: (raw.screenshots ?? [])
       .map((s) => igdbImage(s.url, 't_screenshot_big'))
       .filter((u): u is string => !!u),
@@ -169,4 +196,48 @@ export async function gameDetail(id: number): Promise<GameDetail> {
     websites: (raw.websites ?? []).map((w) => ({ url: w.url, category: w.type })),
     similar: (raw.similar_games ?? []).map(toGameLite),
   };
+}
+
+// ---- Browse by genre / platform / company ----
+
+const browseList = async (where: string, page: number): Promise<PagedLite> => {
+  const body = [
+    LIST_FIELDS,
+    `where ${where} & cover != null;`,
+    'sort rating_count desc;',
+    `limit ${PAGE_SIZE};`,
+    `offset ${page * PAGE_SIZE};`,
+  ].join(' ');
+  const raw = await igdb<IgdbGame[]>('/games', body);
+  const results = (Array.isArray(raw) ? raw : []).map(toGameLite);
+  return { page, hasMore: results.length >= PAGE_SIZE, results };
+};
+
+export const gamesByGenre = (genreId: number, page = 0): Promise<PagedLite> =>
+  browseList(`genres = (${genreId})`, page);
+
+export const gamesByPlatform = (platformId: number, page = 0): Promise<PagedLite> =>
+  browseList(`platforms = (${platformId})`, page);
+
+export const gamesByCompany = (companyId: number, page = 0): Promise<PagedLite> =>
+  browseList(`involved_companies.company = (${companyId})`, page);
+
+/** Company info for a browse-by-company header. Null on failure. */
+export async function companyInfo(companyId: number): Promise<CompanyInfo | null> {
+  try {
+    const body = `fields name, description, logo.url, country; where id = ${companyId};`;
+    const raw = (await igdb<{ id: number; name: string; description?: string; logo?: { url: string } | null }[]>(
+      '/companies',
+      body,
+    ))?.[0];
+    if (!raw) return null;
+    return {
+      id: raw.id,
+      name: raw.name,
+      description: raw.description ?? '',
+      logo: igdbImage(raw.logo?.url ?? null, 't_logo_med'),
+    };
+  } catch {
+    return null;
+  }
 }

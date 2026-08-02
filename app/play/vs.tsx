@@ -1,8 +1,8 @@
 /**
- * "VS" — head-to-head. Two large game covers face off; tap the one you prefer.
- * King-of-the-hill: the winner stays and meets a fresh challenger. Wins tallied per game id.
- * After ROUNDS picks, a ranking ("Your top picks") with medals + Play again. Guest-friendly.
- * Data logic unchanged — only the UI/UX is redesigned.
+ * "VS" — head-to-head. Two large full-width game cards STACKED vertically, with a bold circular
+ * VS badge overlapping between them, so each cover reads clearly. Tap a card body = vote for it;
+ * the small info button on a card opens its detail (no vote). Source toggle: My Likes | Random.
+ * King-of-the-hill: the winner stays and meets a fresh challenger; ranking + play again at the end.
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -17,10 +17,13 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useT } from '@/src/i18n';
 import { versusGames } from '@/src/api/endpoints';
+import { useLibrary } from '@/src/store/library';
 import type { GameLite } from '@/src/types/game';
 
 const ROUNDS = 12;
 const MEDALS = ['#FBBF24', '#CBD5E1', '#D08B5B']; // gold / silver / bronze
+
+type Source = 'likes' | 'random';
 
 const pickIndex = (n: number) => Math.floor(Math.random() * n);
 const shuffle = <T,>(arr: T[]): T[] => {
@@ -39,7 +42,10 @@ export default function VersusGame() {
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
   const t = useT();
+  const { liked } = useLibrary();
 
+  const [source, setSource] = useState<Source>('random');
+  const [fellBack, setFellBack] = useState(false);
   const [phase, setPhase] = useState<Phase>('loading');
   const [deck, setDeck] = useState<GameLite[]>([]);
   const [pair, setPair] = useState<[GameLite, GameLite] | null>(null);
@@ -63,20 +69,31 @@ export default function VersusGame() {
     setPhase('play');
   }, []);
 
+  // Load a pool for the chosen source. My Likes uses liked covers; falls back to Random when <2.
   useEffect(() => {
     let active = true;
     setPhase('loading');
-    versusGames()
-      .then((games) => {
-        if (!active) return;
-        if (games.length < 2) setPhase('error');
-        else start(games);
-      })
-      .catch(() => active && setPhase('error'));
+    setFellBack(false);
+    (async () => {
+      try {
+        if (source === 'likes') {
+          const mine = liked.filter((g) => !!g.image);
+          if (mine.length >= 2) {
+            if (active) start(mine);
+            return;
+          }
+          if (active) setFellBack(true);
+        }
+        const games = await versusGames();
+        if (active) start(games);
+      } catch {
+        if (active) setPhase('error');
+      }
+    })();
     return () => {
       active = false;
     };
-  }, [start]);
+  }, [source, liked, start]);
 
   const onPick = (winnerSide: 0 | 1) => {
     if (!pair || flash !== null) return;
@@ -126,10 +143,30 @@ export default function VersusGame() {
     </View>
   );
 
+  const SourceToggle = (
+    <View style={styles.sourceWrap}>
+      <View style={[styles.segment, { backgroundColor: c.surface }]}>
+        {(['likes', 'random'] as Source[]).map((s) => (
+          <Pressable
+            key={s}
+            onPress={() => setSource(s)}
+            style={[styles.segItem, source === s && { backgroundColor: c.primary }]}
+          >
+            <Text style={[styles.segText, { color: source === s ? '#fff' : c.muted }]}>
+              {s === 'likes' ? t('play.sourceLikes') : t('play.sourceRandom')}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {fellBack ? <Text style={[styles.fellBack, { color: c.muted }]}>{t('play.likesTooFew')}</Text> : null}
+    </View>
+  );
+
   if (phase === 'loading') {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
         {Header}
+        {SourceToggle}
         <View style={styles.center}>
           <ActivityIndicator size="large" color={c.primary} />
         </View>
@@ -141,6 +178,7 @@ export default function VersusGame() {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
         {Header}
+        {SourceToggle}
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={48} color={c.muted} />
           <Text style={[styles.errTitle, { color: c.text }]}>{t('play.loadFailTitle')}</Text>
@@ -158,7 +196,11 @@ export default function VersusGame() {
           <Text style={[styles.resultHead, { color: c.text }]}>{t('play.vsResultHead')}</Text>
           <Text style={[styles.resultSub, { color: c.muted }]}>{t('play.vsResultSub', { n: ROUNDS })}</Text>
           {ranking.map((r, i) => (
-            <View key={r.game.id} style={[styles.rankRow, { backgroundColor: c.surface }]}>
+            <Pressable
+              key={r.game.id}
+              onPress={() => router.push(`/game/${r.game.id}`)}
+              style={({ pressed }) => [styles.rankRow, { backgroundColor: c.surface, opacity: pressed ? 0.75 : 1 }]}
+            >
               {i < 3 ? (
                 <View style={[styles.medal, { backgroundColor: MEDALS[i] }]}>
                   <Ionicons name="trophy" size={16} color="#1A1A00" />
@@ -173,7 +215,8 @@ export default function VersusGame() {
                 </Text>
                 <Text style={[styles.rankWins, { color: c.muted }]}>{t('play.vsWins', { n: r.wins })}</Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={18} color={c.muted} />
+            </Pressable>
           ))}
           <Pressable
             onPress={() => {
@@ -194,6 +237,7 @@ export default function VersusGame() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       {Header}
+      {SourceToggle}
       <View style={styles.progressWrap}>
         <Text style={[styles.progressText, { color: c.muted }]}>
           {t('play.vsRound', { n: Math.min(round + 1, ROUNDS), total: ROUNDS })}
@@ -217,22 +261,37 @@ export default function VersusGame() {
                   style={({ pressed }) => [
                     styles.vsCard,
                     { backgroundColor: c.surface, borderColor: isFlash ? c.like : 'transparent' },
-                    pressed && { transform: [{ scale: 0.97 }] },
+                    pressed && { transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   <Image source={{ uri: g.image ?? undefined }} style={styles.vsCover} contentFit="cover" transition={200} />
-                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.vsShade} pointerEvents="none" />
+                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.92)']} style={styles.vsShade} pointerEvents="none" />
+
+                  {/* Details (does NOT vote) */}
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => router.push(`/game/${g.id}`)}
+                    style={({ pressed }) => [styles.detailsBtn, { opacity: pressed ? 0.7 : 1 }]}
+                  >
+                    <Ionicons name="information-circle" size={16} color="#fff" />
+                    <Text style={styles.detailsText}>{t('play.details')}</Text>
+                  </Pressable>
+
                   <View style={styles.vsMeta}>
                     <Text numberOfLines={2} style={styles.vsName}>
                       {g.name}
                     </Text>
-                    {g.rating != null ? (
-                      <View style={styles.vsRating}>
-                        <Ionicons name="star" size={13} color="#FBBF24" />
-                        <Text style={styles.vsRatingText}>{Math.round(g.rating)}</Text>
-                      </View>
-                    ) : null}
+                    <View style={styles.vsMetaRow}>
+                      {g.rating != null ? (
+                        <View style={styles.vsRating}>
+                          <Ionicons name="star" size={13} color="#FBBF24" />
+                          <Text style={styles.vsRatingText}>{Math.round(g.rating)}</Text>
+                        </View>
+                      ) : null}
+                      {g.genre ? <Text style={styles.vsGenre}>{g.genre}</Text> : null}
+                    </View>
                   </View>
+
                   {isFlash ? (
                     <View style={styles.winBadge}>
                       <Ionicons name="checkmark" size={30} color="#fff" />
@@ -243,7 +302,7 @@ export default function VersusGame() {
             })
           : null}
 
-        {/* Center VS badge */}
+        {/* Center VS badge overlapping the two stacked cards */}
         <LinearGradient
           colors={[c.primary, '#FF5A67']}
           start={{ x: 0, y: 0 }}
@@ -265,15 +324,21 @@ const styles = StyleSheet.create({
   topTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '800' },
   errTitle: { fontSize: 18, fontWeight: '700', marginTop: 6 },
   errSub: { fontSize: 14 },
-  progressWrap: { paddingHorizontal: 16, paddingTop: 4, gap: 6 },
+  // source toggle
+  sourceWrap: { paddingHorizontal: 16, gap: 6 },
+  segment: { flexDirection: 'row', borderRadius: 12, padding: 4, gap: 4 },
+  segItem: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
+  segText: { fontSize: 13, fontWeight: '700' },
+  fellBack: { fontSize: 12, textAlign: 'center' },
+  progressWrap: { paddingHorizontal: 16, paddingTop: 10, gap: 6 },
   progressText: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
   progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 3 },
-  prompt: { textAlign: 'center', fontSize: 22, fontWeight: '900', marginTop: 16, marginBottom: 4 },
-  arena: { flex: 1, flexDirection: 'row', gap: 14, padding: 16, alignItems: 'center' },
+  prompt: { textAlign: 'center', fontSize: 20, fontWeight: '900', marginTop: 12, marginBottom: 2 },
+  arena: { flex: 1, gap: 14, padding: 16, justifyContent: 'center' },
   vsCard: {
     flex: 1,
-    height: '94%',
+    width: '100%',
     borderRadius: 22,
     overflow: 'hidden',
     borderWidth: 3,
@@ -285,14 +350,29 @@ const styles = StyleSheet.create({
   },
   vsCover: { width: '100%', height: '100%' },
   vsShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-  vsMeta: { position: 'absolute', left: 12, right: 12, bottom: 14, gap: 6 },
-  vsName: { color: '#fff', fontSize: 17, fontWeight: '800' },
+  detailsBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  detailsText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  vsMeta: { position: 'absolute', left: 14, right: 14, bottom: 14, gap: 6 },
+  vsName: { color: '#fff', fontSize: 19, fontWeight: '900' },
+  vsMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   vsRating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   vsRatingText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  vsGenre: { color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: '600' },
   winBadge: {
     position: 'absolute',
     top: 12,
-    right: 12,
+    left: 12,
     width: 46,
     height: 46,
     borderRadius: 23,
@@ -303,8 +383,7 @@ const styles = StyleSheet.create({
   vsBadge: {
     position: 'absolute',
     top: '50%',
-    left: '50%',
-    marginLeft: -30,
+    alignSelf: 'center',
     marginTop: -30,
     width: 60,
     height: 60,
@@ -316,7 +395,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 12,
   },
   vsBadgeText: { color: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 1 },
   // result

@@ -36,10 +36,12 @@ service cloud.firestore {
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /avatars/{uid}.jpg {
-      // Anyone can view an avatar; only the owner can upload/replace theirs.
+    // NOTE: a path segment can't mix a wildcard with a literal extension
+    // ({uid}.jpg is invalid). Match the whole filename, then check it == <uid>.jpg.
+    match /avatars/{file} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid
+      allow write: if request.auth != null
+                   && file == request.auth.uid + '.jpg'
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
     }

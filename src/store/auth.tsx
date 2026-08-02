@@ -98,8 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (fields: ProfileFields) => {
       const uid = user?.uid;
       if (!uid) return;
-      await updateProfileFields(uid, fields);
+      // Optimistic: reflect the change in the UI immediately, then persist in the
+      // background so a slow/unconfigured Firestore never blocks the avatar/name update.
       setProfile((prev) => (prev ? { ...prev, ...fields } : prev));
+      await updateProfileFields(uid, fields).catch((e) =>
+        console.warn('[profile] update failed', e),
+      );
     },
     [user?.uid]
   );

@@ -107,6 +107,10 @@ export const en = {
     resultTitle: 'Round over!',
     resultScore: 'You scored {score}/{total}',
     bestStreakLabel: 'Best streak {n}',
+    sourceLikes: 'My Likes',
+    sourceRandom: 'Random',
+    details: 'Details',
+    likesTooFew: 'Like more games first — showing Random',
   },
   auth: {
     tagline: 'What should you play today?',
@@ -253,5 +257,13 @@ export const en = {
     noResults: 'No players found',
     loadFailed: 'Couldn’t load players',
     notFound: 'Player not found',
+  },
+  browse: {
+    subGenre: '{name} games',
+    subPlatform: 'Games on {name}',
+    subCompany: 'Games from {name}',
+    about: 'About',
+    empty: 'No games found',
+    loadFailed: 'Couldn’t load games',
   },
 };

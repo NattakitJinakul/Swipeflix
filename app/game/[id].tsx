@@ -89,10 +89,6 @@ export default function GameDetailScreen() {
     loading,
     error,
     summary,
-    developers,
-    publishers,
-    genres,
-    platforms,
     screenshots,
     trailerYoutubeId,
     websites,
@@ -100,6 +96,9 @@ export default function GameDetailScreen() {
     releaseYear,
     rating,
   } = useGameDetail(Number.isFinite(gameId) ? gameId : null);
+  // Open a browse-by screen for a tapped genre / platform / company reference.
+  const openBrowse = (kind: 'genre' | 'platform' | 'company', rid: number, rname: string) =>
+    router.push(`/browse/${kind}/${rid}?name=${encodeURIComponent(rname)}`);
   const { isGuest } = useAuth();
   const { liked, like, dislike, markPlayed } = useLibrary();
   const [heroIdx, setHeroIdx] = useState(0);
@@ -180,8 +179,8 @@ export default function GameDetailScreen() {
 
   const meta = [
     rating != null ? `⭐ ${Math.round(rating)}/100` : null,
-    platforms[0] ?? null,
-    genres[0] ?? null,
+    detail.platformRefs[0]?.name ?? null,
+    detail.genreRefs[0]?.name ?? null,
     releaseYear ? String(releaseYear) : null,
   ].filter((m): m is string => !!m);
 
@@ -285,27 +284,67 @@ export default function GameDetailScreen() {
           </Section>
         ) : null}
 
-        {/* Genre chips */}
-        {genres.length ? (
+        {/* Genre chips (tappable -> browse by genre) */}
+        {detail.genreRefs.length ? (
           <View style={styles.chipRow}>
-            {genres.map((g) => (
-              <View key={g} style={[styles.chip, { backgroundColor: c.surface }]}>
-                <Text style={[styles.chipText, { color: c.text }]}>{g}</Text>
-              </View>
+            {detail.genreRefs.map((g) => (
+              <Pressable
+                key={g.id}
+                onPress={() => openBrowse('genre', g.id, g.name)}
+                style={({ pressed }) => [styles.chip, { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Text style={[styles.chipText, { color: c.text }]}>{g.name}</Text>
+              </Pressable>
             ))}
           </View>
         ) : null}
 
-        {/* Studios */}
-        {developers.length || publishers.length ? (
+        {/* Platform chips (tappable -> browse by platform) */}
+        {detail.platformRefs.length ? (
+          <View style={styles.chipRow}>
+            {detail.platformRefs.map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => openBrowse('platform', p.id, p.name)}
+                style={({ pressed }) => [styles.chip, { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Ionicons name="hardware-chip-outline" size={13} color={c.muted} />
+                <Text style={[styles.chipText, { color: c.text }]}>{p.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Studios (tappable -> browse by company) */}
+        {detail.developerRefs.length || detail.publisherRefs.length ? (
           <Section title={t('detail.studios')} color={c.text}>
-            {developers.length ? (
-              <Text style={[styles.body, { color: c.muted }]}>
-                {t('detail.developer')}: <Text style={{ color: c.text, fontWeight: '700' }}>{developers.join(' · ')}</Text>
-              </Text>
+            {detail.developerRefs.length ? (
+              <View style={styles.studioRow}>
+                <Text style={[styles.body, { color: c.muted }]}>{t('detail.developer')}:</Text>
+                {detail.developerRefs.map((d) => (
+                  <Pressable
+                    key={d.id}
+                    onPress={() => openBrowse('company', d.id, d.name)}
+                    style={({ pressed }) => [styles.companyChip, { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 }]}
+                  >
+                    <Text style={[styles.chipText, { color: c.primary }]}>{d.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
             ) : null}
-            {publishers.length ? (
-              <Text style={[styles.body, { color: c.muted }]}>{t('detail.publisher')}: {publishers.join(' · ')}</Text>
+            {detail.publisherRefs.length ? (
+              <View style={styles.studioRow}>
+                <Text style={[styles.body, { color: c.muted }]}>{t('detail.publisher')}:</Text>
+                {detail.publisherRefs.map((p) => (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => openBrowse('company', p.id, p.name)}
+                    style={({ pressed }) => [styles.companyChip, { backgroundColor: c.surface, opacity: pressed ? 0.7 : 1 }]}
+                  >
+                    <Text style={[styles.chipText, { color: c.primary }]}>{p.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
             ) : null}
           </Section>
         ) : null}
@@ -447,8 +486,10 @@ const styles = StyleSheet.create({
   libHintText: { fontSize: 13, fontWeight: '700' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginTop: 16 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   chipText: { fontSize: 13, fontWeight: '600' },
+  studioRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 4 },
+  companyChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   storeChip: {
     flexDirection: 'row',
     alignItems: 'center',

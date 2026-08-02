@@ -107,6 +107,10 @@ export const th = {
     resultTitle: 'จบรอบแล้ว!',
     resultScore: 'คุณได้ {score}/{total}',
     bestStreakLabel: 'สตรีคสูงสุด {n}',
+    sourceLikes: 'ที่ถูกใจ',
+    sourceRandom: 'สุ่ม',
+    details: 'รายละเอียด',
+    likesTooFew: 'กดถูกใจเกมเพิ่มก่อน — แสดงแบบสุ่ม',
   },
   auth: {
     tagline: 'วันนี้เล่นอะไรดี',
@@ -253,5 +257,13 @@ export const th = {
     noResults: 'ไม่พบผู้เล่น',
     loadFailed: 'โหลดผู้เล่นไม่สำเร็จ',
     notFound: 'ไม่พบผู้เล่น',
+  },
+  browse: {
+    subGenre: 'เกมแนว {name}',
+    subPlatform: 'เกมบน {name}',
+    subCompany: 'เกมจาก {name}',
+    about: 'เกี่ยวกับ',
+    empty: 'ไม่พบเกม',
+    loadFailed: 'โหลดเกมไม่สำเร็จ',
   },
 };

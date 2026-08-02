@@ -16,9 +16,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useT } from '@/src/i18n';
-import { guessGames, type GuessGame } from '@/src/api/endpoints';
+import { guessGames, screenshotsForGames, type GuessGame } from '@/src/api/endpoints';
+import { useLibrary } from '@/src/store/library';
 
 const GUESS_ROUNDS = 10;
+
+type Source = 'likes' | 'random';
 
 const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const shuffle = <T,>(arr: T[]): T[] => {
@@ -54,7 +57,10 @@ export default function GuessScreen() {
   const c = Colors[scheme];
   const insets = useSafeAreaInsets();
   const t = useT();
+  const { liked } = useLibrary();
 
+  const [source, setSource] = useState<Source>('random');
+  const [fellBack, setFellBack] = useState(false);
   const [pool, setPool] = useState<GuessGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -77,12 +83,25 @@ export default function GuessScreen() {
     setRound(buildRound(p));
   }, []);
 
+  // Load a pool for the chosen source. My Likes fetches screenshots for liked games; falls back to
+  // Random when fewer than 4 liked games have usable screenshots.
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError(false);
-    guessGames()
-      .then((games) => {
+    setFellBack(false);
+    (async () => {
+      try {
+        let games: GuessGame[] = [];
+        if (source === 'likes') {
+          games = await screenshotsForGames(liked.map((g) => g.id));
+          if (games.length < 4) {
+            if (active) setFellBack(true);
+            games = await guessGames();
+          }
+        } else {
+          games = await guessGames();
+        }
         if (!active) return;
         if (games.length < 4) {
           setError(true);
@@ -90,13 +109,16 @@ export default function GuessScreen() {
         }
         setPool(games);
         start(games);
-      })
-      .catch(() => active && setError(true))
-      .finally(() => active && setLoading(false));
+      } catch {
+        if (active) setError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
     return () => {
       active = false;
     };
-  }, [start]);
+  }, [source, liked, start]);
 
   const answered = picked !== null;
 
@@ -142,11 +164,33 @@ export default function GuessScreen() {
     [c.text, insets.top, t],
   );
 
+  const SourceToggle = (
+    <View style={styles.sourceWrap}>
+      <View style={[styles.segment, { backgroundColor: c.surface }]}>
+        {(['likes', 'random'] as Source[]).map((s) => (
+          <Pressable
+            key={s}
+            onPress={() => setSource(s)}
+            style={[styles.segItem, source === s && { backgroundColor: c.primary }]}
+          >
+            <Text style={[styles.segText, { color: source === s ? '#fff' : c.muted }]}>
+              {s === 'likes' ? t('play.sourceLikes') : t('play.sourceRandom')}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {fellBack ? <Text style={[styles.fellBack, { color: c.muted }]}>{t('play.likesTooFew')}</Text> : null}
+    </View>
+  );
+
   if (loading) {
     return (
-      <View style={[styles.root, styles.center, { backgroundColor: c.background }]}>
+      <View style={[styles.root, { backgroundColor: c.background }]}>
         {Header}
-        <ActivityIndicator size="large" color={c.primary} />
+        {SourceToggle}
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={c.primary} />
+        </View>
       </View>
     );
   }
@@ -155,6 +199,7 @@ export default function GuessScreen() {
     return (
       <View style={[styles.root, { backgroundColor: c.background }]}>
         {Header}
+        {SourceToggle}
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={48} color={c.muted} />
           <Text style={[styles.errTitle, { color: c.text }]}>{t('play.loadFailTitle')}</Text>
@@ -194,6 +239,7 @@ export default function GuessScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       {Header}
+      {SourceToggle}
 
       {/* Round progress */}
       <View style={styles.progressWrap}>
@@ -304,6 +350,11 @@ const styles = StyleSheet.create({
   topTitle: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '800' },
   errTitle: { fontSize: 18, fontWeight: '700', marginTop: 6 },
   errSub: { fontSize: 14 },
+  sourceWrap: { paddingHorizontal: 16, gap: 6, marginBottom: 12 },
+  segment: { flexDirection: 'row', borderRadius: 12, padding: 4, gap: 4 },
+  segItem: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: 'center' },
+  segText: { fontSize: 13, fontWeight: '700' },
+  fellBack: { fontSize: 12, textAlign: 'center' },
   progressWrap: { paddingHorizontal: 16, gap: 6, marginBottom: 12 },
   progressText: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
   progressTrack: { height: 6, borderRadius: 3, overflow: 'hidden' },

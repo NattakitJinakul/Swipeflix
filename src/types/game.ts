@@ -15,18 +15,29 @@ export type GameLite = {
   rating: number | null; // IGDB rating 0..100
 };
 
+/** id + display name for a tappable IGDB reference (genre / platform / company). */
+export type Ref = { id: number; name: string };
+
 /** Full detail — from /games detail query + mapped relations. */
 export type GameDetail = GameLite & {
   summary: string;
-  developers: string[]; // involved_companies where developer
-  publishers: string[]; // involved_companies where publisher
+  developers: string[]; // involved_companies where developer (names)
+  publishers: string[]; // involved_companies where publisher (names)
   genres: string[]; // genres[].name
   platforms: string[]; // platforms[].name
+  // Tappable {id,name} references for the browse-by feature (parallel to the name-only arrays above).
+  developerRefs: Ref[];
+  publisherRefs: Ref[];
+  genreRefs: Ref[];
+  platformRefs: Ref[];
   screenshots: string[]; // screenshots[].url -> full URLs
   trailerYoutubeId: string | null; // videos[0].video_id
   websites: { url: string; category: number }[];
   similar: GameLite[]; // similar_games
 };
+
+/** IGDB company (from /companies). */
+export type CompanyInfo = { id: number; name: string; description: string; logo: string | null };
 
 // ---- Raw IGDB API response shapes (for mapping in endpoints.ts) ----
 
@@ -47,7 +58,7 @@ export type IgdbGameDetail = IgdbGame & {
   summary?: string;
   storyline?: string;
   involved_companies?: {
-    company?: { name?: string };
+    company?: { id?: number; name?: string };
     developer?: boolean;
     publisher?: boolean;
   }[];
