@@ -58,6 +58,13 @@ export const en = {
     noResultsSub: 'Nothing matched “{query}”',
     loadFailTitle: 'Couldn’t load games',
     loadFailSub: 'Please try again',
+    gameOfDay: 'Game of the Day',
+    anticipated: 'Most Anticipated',
+    reviews: 'Recent Reviews',
+    days: 'Days',
+    hours: 'Hours',
+    minutes: 'Minutes',
+    releasesOn: 'Releases {date}',
   },
   watchlist: {
     title: 'Your games',

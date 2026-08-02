@@ -10,6 +10,8 @@ import type {
   IgdbGame,
   IgdbGameDetail,
   Ref,
+  ReviewGame,
+  UpcomingGame,
 } from '../types/game';
 
 const LIST_FIELDS =
@@ -99,6 +101,54 @@ export async function searchGames(query: string): Promise<GameLite[]> {
   const body = `search "${q}"; fields name, cover.url, rating, first_release_date, genres.name, platforms.name; where cover != null; limit ${PAGE_SIZE};`;
   const raw = await igdb<IgdbGame[]>('/games', body);
   return (Array.isArray(raw) ? raw : []).map(toGameLite);
+}
+
+// ---- Discover (bento feed) ----
+
+/** Deterministic "Game of the Day" — stable per calendar day, picked from the popular list. */
+export async function gameOfDay(): Promise<GameLite | null> {
+  const { results } = await popularGames(0);
+  if (!results.length) return null;
+  return results[new Date().getDate() % results.length];
+}
+
+/** Most anticipated unreleased games (by hype) -> countdown targets. */
+export async function upcomingGames(): Promise<UpcomingGame[]> {
+  const now = Math.floor(Date.now() / 1000);
+  const body =
+    'fields name, cover.url, first_release_date, hypes, genres.name; ' +
+    `where first_release_date > ${now} & cover != null & hypes != null; sort hypes desc; limit 6;`;
+  const raw = await igdb<(IgdbGame & { hypes?: number })[]>('/games', body);
+  return (Array.isArray(raw) ? raw : [])
+    .filter((r) => r.first_release_date != null)
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      image: igdbImage(r.cover?.url ?? null, 't_cover_big'),
+      releaseEpoch: r.first_release_date as number,
+      genre: r.genres?.[0]?.name ?? '',
+    }));
+}
+
+/** Recently released, rated games for the reviews wall (landscape screenshot preferred). */
+export async function recentReviews(): Promise<ReviewGame[]> {
+  const now = Math.floor(Date.now() / 1000);
+  const six = now - 60 * 60 * 24 * 182;
+  const body =
+    'fields name, cover.url, rating, rating_count, genres.name, first_release_date, screenshots.url; ' +
+    `where rating != null & rating_count > 20 & first_release_date != null & first_release_date < ${now} ` +
+    `& first_release_date > ${six} & cover != null; sort first_release_date desc; limit 7;`;
+  const raw = await igdb<(IgdbGame & { screenshots?: { url: string }[] })[]>('/games', body);
+  return (Array.isArray(raw) ? raw : []).map((r) => {
+    const shot = r.screenshots?.[0]?.url;
+    return {
+      id: r.id,
+      name: r.name,
+      image: igdbImage(shot ?? r.cover?.url ?? null, shot ? 't_screenshot_big' : 't_720p'),
+      rating: r.rating ?? 0,
+      genre: r.genres?.[0]?.name ?? '',
+    };
+  });
 }
 
 // ---- Mini-games (สนุก tab) ----

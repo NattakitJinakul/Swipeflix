@@ -1,28 +1,43 @@
 /**
- * Discover screen — search box on top (useSearch, debounced). No query -> popular grid
- * (with a ยอดนิยม / คะแนนสูง toggle); with query -> results grid. Tap opens game detail.
+ * Discover — search on top; with a query it shows the results grid, otherwise a rich BENTO feed:
+ * Game of the Day hero, "Most Anticipated" countdown grid, and a "Recent Reviews" bento wall.
+ * Guest-friendly. Loading skeletons + error/empty states. i18n throughout.
  */
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CountdownCard } from '@/components/CountdownCard';
 import { EmptyState } from '@/components/EmptyState';
+import { gameImage } from '@/components/game-image';
 import { PosterGrid } from '@/components/PosterGrid';
+import { ReviewCard } from '@/components/ReviewCard';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useT } from '@/src/i18n';
-import { popularGames, topRatedGames } from '@/src/api/endpoints';
+import { gameOfDay, recentReviews, upcomingGames } from '@/src/api/endpoints';
 import { useSearch } from '@/src/hooks/useSearch';
-import type { GameLite } from '@/src/types/game';
+import { useT } from '@/src/i18n';
+import type { GameLite, ReviewGame, UpcomingGame } from '@/src/types/game';
 
-type Feed = 'popular' | 'top_rated';
+const { width: W } = Dimensions.get('window');
+const HPAD = 16;
+const GAP = 10;
+const SMALL_H = 116;
+const LARGE_H = 172;
 
-const FEEDS: { key: Feed; labelKey: string }[] = [
-  { key: 'popular', labelKey: 'discover.feedPopular' },
-  { key: 'top_rated', labelKey: 'discover.feedTopRated' },
-];
+const open = (id: number) => router.push(`/game/${id}`);
 
 export default function DiscoverScreen() {
   const scheme = useColorScheme() ?? 'dark';
@@ -31,27 +46,34 @@ export default function DiscoverScreen() {
   const t = useT();
 
   const { query, setQuery, results, loading } = useSearch();
-  const [feed, setFeed] = useState<Feed>('popular');
-  const [grid, setGrid] = useState<GameLite[]>([]);
-  const [gridLoading, setGridLoading] = useState(true);
+  const searching = query.trim().length > 0;
+
+  const [gotd, setGotd] = useState<GameLite | null>(null);
+  const [upcoming, setUpcoming] = useState<UpcomingGame[]>([]);
+  const [reviews, setReviews] = useState<ReviewGame[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    setGridLoading(true);
-    const fetch = feed === 'popular' ? popularGames() : topRatedGames();
-    fetch
-      .then((paged) => active && setGrid(paged.results))
-      .catch(() => active && setGrid([]))
-      .finally(() => active && setGridLoading(false));
+    setFeedLoading(true);
+    Promise.all([
+      gameOfDay().catch(() => null),
+      upcomingGames().catch(() => [] as UpcomingGame[]),
+      recentReviews().catch(() => [] as ReviewGame[]),
+    ])
+      .then(([g, u, r]) => {
+        if (!active) return;
+        setGotd(g);
+        setUpcoming(u);
+        setReviews(r);
+      })
+      .finally(() => active && setFeedLoading(false));
     return () => {
       active = false;
     };
-  }, [feed]);
+  }, []);
 
-  const searching = query.trim().length > 0;
-  const busy = searching ? loading : gridLoading;
-  const data = searching ? results : grid;
-  const openDetail = (id: number) => router.push(`/game/${id}`);
+  const feedEmpty = !gotd && upcoming.length === 0 && reviews.length === 0;
 
   return (
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top + 8 }]}>
@@ -75,48 +97,132 @@ export default function DiscoverScreen() {
         ) : null}
       </View>
 
-      {!searching ? (
-        <View style={styles.feedRow}>
-          {FEEDS.map((f) => (
-            <Pressable
-              key={f.key}
-              onPress={() => setFeed(f.key)}
-              style={[styles.feedChip, { backgroundColor: feed === f.key ? c.primary : c.surface }]}
-            >
-              <Text style={[styles.feedText, { color: feed === f.key ? '#fff' : c.muted }]}>
-                {t(f.labelKey)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-
-      {busy && data.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={c.primary} size="large" />
-        </View>
-      ) : (
-        <PosterGrid
-          items={data}
-          numColumns={3}
-          onPress={openDetail}
-          ListEmptyComponent={
-            searching ? (
+      {searching ? (
+        loading && results.length === 0 ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={c.primary} size="large" />
+          </View>
+        ) : (
+          <PosterGrid
+            items={results}
+            numColumns={3}
+            onPress={open}
+            ListEmptyComponent={
               <EmptyState
                 icon="search-outline"
                 title={t('discover.noResultsTitle')}
                 subtitle={t('discover.noResultsSub', { query })}
               />
-            ) : (
-              <EmptyState
-                icon="flame-outline"
-                title={t('discover.loadFailTitle')}
-                subtitle={t('discover.loadFailSub')}
-              />
-            )
-          }
-        />
+            }
+          />
+        )
+      ) : feedLoading ? (
+        <Skeleton c={c} />
+      ) : feedEmpty ? (
+        <EmptyState icon="flame-outline" title={t('discover.loadFailTitle')} subtitle={t('discover.loadFailSub')} />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24, paddingTop: 12 }}
+        >
+          {/* Game of the Day hero */}
+          {gotd ? (
+            <Pressable
+              onPress={() => open(gotd.id)}
+              style={({ pressed }) => [styles.hero, { backgroundColor: c.surface, opacity: pressed ? 0.9 : 1 }]}
+            >
+              {gameImage(gotd.image) ? (
+                <Image source={{ uri: gameImage(gotd.image)! }} style={styles.heroCover} contentFit="cover" />
+              ) : (
+                <View style={[styles.heroCover, styles.heroFallback, { backgroundColor: c.background }]}>
+                  <Ionicons name="game-controller" size={22} color={c.muted} />
+                </View>
+              )}
+              <View style={styles.heroBody}>
+                <Text style={[styles.heroLabel, { color: c.primary }]}>⭐ {t('discover.gameOfDay')}</Text>
+                <Text style={[styles.heroName, { color: c.text }]} numberOfLines={2}>{gotd.name}</Text>
+                {gotd.rating != null ? (
+                  <View style={styles.heroRatingRow}>
+                    <Ionicons name="star" size={13} color="#FBBF24" />
+                    <Text style={[styles.heroRating, { color: c.muted }]}>{Math.round(gotd.rating)}/100</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={c.muted} />
+            </Pressable>
+          ) : null}
+
+          {/* Most Anticipated — countdown grid */}
+          {upcoming.length ? (
+            <>
+              <Text style={[styles.section, { color: c.text }]}>{t('discover.anticipated')}</Text>
+              {pairs(upcoming.slice(0, 6)).map((row, ri) => (
+                <View key={ri} style={styles.row}>
+                  {row.map((g) => (
+                    <CountdownCard key={g.id} game={g} onPress={() => open(g.id)} />
+                  ))}
+                  {row.length === 1 ? <View style={styles.flex1} /> : null}
+                </View>
+              ))}
+            </>
+          ) : null}
+
+          {/* Recent Reviews — bento wall */}
+          {reviews.length ? (
+            <>
+              <Text style={[styles.section, { color: c.text }]}>{t('discover.reviews')}</Text>
+              <ReviewBento items={reviews} />
+            </>
+          ) : null}
+        </ScrollView>
       )}
+    </View>
+  );
+}
+
+const pairs = <T,>(arr: T[]): T[][] => {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += 2) out.push(arr.slice(i, i + 2));
+  return out;
+};
+
+/** Reviews bento: small pair · one large · small pairs. */
+function ReviewBento({ items }: { items: ReviewGame[] }) {
+  const smallW = (W - HPAD * 2 - GAP) / 2;
+  const [a, b, big, ...rest] = items;
+  return (
+    <View style={styles.bento}>
+      {a || b ? (
+        <View style={styles.row}>
+          {a ? <ReviewCard game={a} onPress={() => open(a.id)} style={{ width: smallW, height: SMALL_H }} /> : null}
+          {b ? <ReviewCard game={b} onPress={() => open(b.id)} style={{ width: smallW, height: SMALL_H }} /> : null}
+        </View>
+      ) : null}
+      {big ? (
+        <View style={styles.rowFull}>
+          <ReviewCard game={big} onPress={() => open(big.id)} big style={{ width: W - HPAD * 2, height: LARGE_H }} />
+        </View>
+      ) : null}
+      {pairs(rest).map((row, ri) => (
+        <View key={ri} style={styles.row}>
+          {row.map((g) => (
+            <ReviewCard key={g.id} game={g} onPress={() => open(g.id)} style={{ width: smallW, height: SMALL_H }} />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Skeleton({ c }: { c: (typeof Colors)['dark'] }) {
+  return (
+    <View style={styles.skel}>
+      <View style={[styles.skelHero, { backgroundColor: c.surface }]} />
+      <View style={styles.row}>
+        <View style={[styles.skelSmall, { backgroundColor: c.surface }]} />
+        <View style={[styles.skelSmall, { backgroundColor: c.surface }]} />
+      </View>
+      <View style={[styles.skelLarge, { backgroundColor: c.surface }]} />
     </View>
   );
 }
@@ -127,14 +233,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginHorizontal: 16,
+    marginHorizontal: HPAD,
     paddingHorizontal: 14,
     height: 46,
     borderRadius: 12,
   },
   input: { flex: 1, fontSize: 15, paddingVertical: 0 },
-  feedRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4 },
-  feedChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
-  feedText: { fontSize: 13, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  section: { fontSize: 18, fontWeight: '900', paddingHorizontal: HPAD, marginTop: 22, marginBottom: 12 },
+  row: { flexDirection: 'row', gap: GAP, paddingHorizontal: HPAD, marginBottom: GAP },
+  rowFull: { paddingHorizontal: HPAD, marginBottom: GAP },
+  flex1: { flex: 1 },
+  bento: {},
+  // hero
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: HPAD,
+    padding: 10,
+    borderRadius: 16,
+  },
+  heroCover: { width: 56, height: 74, borderRadius: 10 },
+  heroFallback: { alignItems: 'center', justifyContent: 'center' },
+  heroBody: { flex: 1, gap: 3 },
+  heroLabel: { fontSize: 12, fontWeight: '800' },
+  heroName: { fontSize: 16, fontWeight: '800' },
+  heroRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  heroRating: { fontSize: 12, fontWeight: '700' },
+  // skeleton
+  skel: { paddingTop: 12 },
+  skelHero: { height: 94, borderRadius: 16, marginHorizontal: HPAD, marginBottom: 20 },
+  skelSmall: { flex: 1, height: SMALL_H, borderRadius: 16 },
+  skelLarge: { height: LARGE_H, borderRadius: 16, marginHorizontal: HPAD, marginTop: GAP },
 });

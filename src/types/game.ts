@@ -39,6 +39,24 @@ export type GameDetail = GameLite & {
 /** IGDB company (from /companies). */
 export type CompanyInfo = { id: number; name: string; description: string; logo: string | null };
 
+/** Anticipated game (countdown target) for Discover. */
+export type UpcomingGame = {
+  id: number;
+  name: string;
+  image: string | null; // cover (portrait)
+  releaseEpoch: number; // first_release_date (unix seconds)
+  genre: string;
+};
+
+/** Recently-released rated game for the Discover reviews wall. */
+export type ReviewGame = {
+  id: number;
+  name: string;
+  image: string | null; // screenshot (landscape) or cover
+  rating: number; // 0..100
+  genre: string;
+};
+
 // ---- Raw IGDB API response shapes (for mapping in endpoints.ts) ----
 
 export type IgdbImageRef = { id?: number; url: string };

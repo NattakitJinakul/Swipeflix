@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import Animated, {
@@ -31,7 +31,6 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFirstRun } from '@/src/hooks/useFirstRun';
 import { useT } from '@/src/i18n';
-import { popularGames } from '@/src/api/endpoints';
 import { useDeck, type DeckSource } from '@/src/hooks/useDeck';
 import { useAuth } from '@/src/store/auth';
 import { useLibrary } from '@/src/store/library';
@@ -67,22 +66,6 @@ export default function SwipeScreen() {
   const [burst, setBurst] = useState(0);
   const [signInPrompt, setSignInPrompt] = useState(false);
   const tutorial = useFirstRun(TUTORIAL_KEY);
-
-  // Daily featured game — deterministic pick from the popular list, stable for the calendar day.
-  const [daily, setDaily] = useState<GameLite | null>(null);
-  useEffect(() => {
-    let active = true;
-    popularGames(1)
-      .then((paged) => {
-        const list = paged.results;
-        if (!active || !list.length) return;
-        setDaily(list[new Date().getDate() % list.length]);
-      })
-      .catch(() => {}); // hide banner on error
-    return () => {
-      active = false;
-    };
-  }, []);
 
   // MATCH celebration overlay (high-rated like). Driven by state + a Reanimated fade/scale.
   const [match, setMatch] = useState<GameLite | null>(null);
@@ -189,38 +172,6 @@ export default function SwipeScreen() {
           />
         </View>
       </View>
-
-      {/* Daily featured game banner (tap -> detail) */}
-      {daily ? (
-        <Pressable
-          onPress={() => router.push(`/game/${daily.id}`)}
-          style={({ pressed }) => [
-            styles.daily,
-            { backgroundColor: c.surface, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          {gameImage(daily.image) ? (
-            <Image source={{ uri: gameImage(daily.image)! }} style={styles.dailyThumb} contentFit="cover" />
-          ) : (
-            <View style={[styles.dailyThumb, styles.dailyThumbFallback, { backgroundColor: c.background }]}>
-              <Ionicons name="game-controller" size={18} color={c.muted} />
-            </View>
-          )}
-          <View style={styles.dailyInfo}>
-            <Text style={[styles.dailyLabel, { color: c.primary }]}>{t('swipe.dailyLabel')}</Text>
-            <Text style={[styles.dailyName, { color: c.text }]} numberOfLines={1}>
-              {daily.name}
-            </Text>
-          </View>
-          {daily.rating != null ? (
-            <View style={styles.dailyRating}>
-              <Ionicons name="star" size={12} color="#F5C518" />
-              <Text style={[styles.dailyRatingText, { color: c.text }]}>{Math.round(daily.rating)}</Text>
-            </View>
-          ) : null}
-          <Ionicons name="chevron-forward" size={18} color={c.muted} />
-        </Pressable>
-      ) : null}
 
       {/* Source toggle */}
       <ScrollView
@@ -429,23 +380,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 6,
   },
-  // เกมแห่งวัน banner
-  daily: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 16,
-    marginTop: 10,
-    padding: 8,
-    borderRadius: 14,
-  },
-  dailyThumb: { width: 44, height: 44, borderRadius: 8 },
-  dailyThumbFallback: { alignItems: 'center', justifyContent: 'center' },
-  dailyInfo: { flex: 1, gap: 1 },
-  dailyLabel: { fontSize: 11, fontWeight: '800' },
-  dailyName: { fontSize: 14, fontWeight: '700' },
-  dailyRating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  dailyRatingText: { fontSize: 13, fontWeight: '800' },
   // MATCH! overlay
   matchOverlay: {
     ...StyleSheet.absoluteFillObject,

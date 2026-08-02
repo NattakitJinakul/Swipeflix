@@ -58,6 +58,13 @@ export const th = {
     noResultsSub: 'ไม่เจอเกมที่ตรงกับ “{query}”',
     loadFailTitle: 'โหลดเกมไม่สำเร็จ',
     loadFailSub: 'ลองใหม่อีกครั้ง',
+    gameOfDay: 'เกมแห่งวัน',
+    anticipated: 'เกมที่รอคอย',
+    reviews: 'รีวิวล่าสุด',
+    days: 'วัน',
+    hours: 'ชม.',
+    minutes: 'นาที',
+    releasesOn: 'วางจำหน่าย {date}',
   },
   watchlist: {
     title: 'รายการเกม',
