@@ -20,8 +20,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BlurView } from 'expo-blur';
-
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
 import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
@@ -299,24 +297,12 @@ export default function SwipeScreen() {
         )}
       </View>
 
-      {/* Action buttons (below card) — designed control bar */}
+      {/* Action buttons (below card) — glowing buttons floating on the background */}
       {!deck.error && !deckEmpty ? (
-        <View style={styles.actionBar}>
-          <BlurView
-            intensity={scheme === 'dark' ? 40 : 60}
-            tint={scheme === 'dark' ? 'dark' : 'light'}
-            style={StyleSheet.absoluteFill}
-          />
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.55)' : 'rgba(255,255,255,0.55)' },
-            ]}
-          />
-          <View style={[styles.actionHairline, { backgroundColor: c.muted }]} />
-          <View style={styles.actions}>
+        <View style={styles.actions}>
           <View style={styles.actionCol}>
             <ActionButton
+              size={62}
               icon="thumbs-down"
               color={ACTION_COLORS.dislike}
               onPress={() => deck.current && handleDislike(deck.current.id)}
@@ -325,6 +311,7 @@ export default function SwipeScreen() {
           </View>
           <View style={styles.actionCol}>
             <ActionButton
+              size={54}
               icon="checkmark-done"
               color={ACTION_COLORS.watched}
               onPress={() => deck.current && handlePlayed(deck.current)}
@@ -333,6 +320,7 @@ export default function SwipeScreen() {
           </View>
           <View style={styles.actionCol}>
             <ActionButton
+              size={70}
               icon="heart"
               color={ACTION_COLORS.like}
               onPress={() => deck.current && handleLike(deck.current)}
@@ -341,13 +329,13 @@ export default function SwipeScreen() {
           </View>
           <View style={styles.actionCol}>
             <ActionButton
+              size={54}
               icon="arrow-undo"
               color={ACTION_COLORS.undo}
               disabled={!canUndoDeck}
               onPress={handleUndo}
             />
             <Text style={[styles.actionLabel, { color: c.muted }]}>{t('swipe.undo')}</Text>
-          </View>
           </View>
         </View>
       ) : null}
@@ -431,35 +419,15 @@ const styles = StyleSheet.create({
   filterRow: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   miniChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, alignSelf: 'center' },
   deckArea: { flex: 1, marginHorizontal: 4 },
-  actionCol: { alignItems: 'center', gap: 6 },
-  actionLabel: { fontSize: 12, fontWeight: '700' },
-  actionBar: {
-    marginHorizontal: 16,
-    marginBottom: 10,
-    marginTop: 6,
-    borderRadius: 28,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  actionHairline: {
-    position: 'absolute',
-    top: 0,
-    left: 24,
-    right: 24,
-    height: StyleSheet.hairlineWidth,
-    opacity: 0.35,
-  },
+  actionCol: { alignItems: 'center', gap: 8 },
+  actionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
   actions: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-around',
-    paddingHorizontal: 8,
-    paddingTop: 14,
-    paddingBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   // เกมแห่งวัน banner
   daily: {

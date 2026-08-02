@@ -168,5 +168,5 @@ export function CardStack({
 
 const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  cardWrap: { ...StyleSheet.absoluteFillObject, margin: 12 },
+  cardWrap: { ...StyleSheet.absoluteFillObject, marginHorizontal: 12, marginVertical: 2 },
 });

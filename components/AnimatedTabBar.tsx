@@ -1,7 +1,8 @@
 /**
- * Premium floating tab bar: frosted-glass (expo-blur) rounded pill, a gradient indicator
- * that springs between tabs, and icons that scale + turn white when active. Haptic on tap.
- * Routing stays with expo-router Tabs; this only replaces the bar's look.
+ * Premium floating glass tab bar: a frosted rounded pill (expo-blur + surface tint + top hairline
+ * highlight), a gradient indicator pill that springs behind the active tab with a colored glow, and
+ * icons that scale + turn white when active. The active tab also reveals its label. Haptic on tap.
+ * Routing stays with expo-router Tabs; this only replaces the bar's look. In-flow (reserves space).
  */
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -10,7 +11,12 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/theme';
@@ -27,6 +33,9 @@ const TABS: Record<string, { outline: IoniconName; filled: IoniconName; labelKey
   profile: { outline: 'person-outline', filled: 'person', labelKey: 'tabs.profile' },
 };
 
+const BAR_H = 62;
+const PILL = 46;
+
 export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
@@ -39,25 +48,37 @@ export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
 
   const pos = useSharedValue(state.index);
   useEffect(() => {
-    pos.value = withSpring(state.index, { damping: 16, stiffness: 180, mass: 0.7 });
+    pos.value = withSpring(state.index, { damping: 15, stiffness: 170, mass: 0.7 });
   }, [state.index, pos]);
 
-  const indicatorStyle = useAnimatedStyle(() => ({ transform: [{ translateX: pos.value * tabW }] }));
+  // Center a PILL-wide indicator within the active tab slot.
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: pos.value * tabW + (tabW - PILL) / 2 }],
+  }));
 
   return (
     <View style={[styles.wrap, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8, backgroundColor: c.background }]}>
-      <View style={styles.bar} onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
-        <BlurView intensity={scheme === 'dark' ? 40 : 60} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.7)' : 'rgba(244,244,246,0.7)' }]} />
+      <View style={[styles.bar, { shadowColor: '#000' }]} onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
+        {/* Clipped glass layer */}
+        <View style={styles.clip} pointerEvents="none">
+          <BlurView intensity={scheme === 'dark' ? 45 : 65} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.72)' : 'rgba(244,244,246,0.72)' },
+            ]}
+          />
+          <View style={styles.hairline} />
+        </View>
 
-        {/* Sliding gradient indicator behind the active tab */}
+        {/* Sliding gradient indicator pill (glows; sits behind the active icon) */}
         {tabW > 0 ? (
-          <Animated.View style={[styles.indicatorWrap, { width: tabW }, indicatorStyle]} pointerEvents="none">
+          <Animated.View style={[styles.indicatorWrap, indicatorStyle]} pointerEvents="none">
             <LinearGradient
               colors={[c.primary, '#FF5A67']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.indicator}
+              style={[styles.indicator, { shadowColor: c.primary }]}
             />
           </Animated.View>
         ) : null}
@@ -94,35 +115,56 @@ function TabItem({
   onPress: () => void;
 }) {
   const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(focused ? 1.18 : 1, { damping: 13, stiffness: 180 }) }],
+    transform: [{ scale: withSpring(focused ? 1.14 : 1, { damping: 13, stiffness: 180 }) }],
   }));
   return (
     <Pressable style={styles.item} onPress={onPress} hitSlop={8} accessibilityLabel={label}>
       <Animated.View style={iconStyle}>
-        <Ionicons name={focused ? cfg.filled : cfg.outline} size={24} color={focused ? '#fff' : muted} />
+        <Ionicons name={focused ? cfg.filled : cfg.outline} size={25} color={focused ? '#fff' : muted} />
       </Animated.View>
     </Pressable>
   );
 }
 
-const BAR_H = 56;
-
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 28, paddingTop: 2, alignItems: 'center' },
+  wrap: { paddingHorizontal: 18, paddingTop: 2, alignItems: 'center' },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
     height: BAR_H,
-    borderRadius: BAR_H / 2,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.32,
-    shadowRadius: 16,
-    elevation: 14,
+    borderRadius: 999,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 16,
+  },
+  clip: { ...StyleSheet.absoluteFillObject, borderRadius: 999, overflow: 'hidden' },
+  hairline: {
+    position: 'absolute',
+    top: 0,
+    left: 20,
+    right: 20,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', height: BAR_H },
-  indicatorWrap: { position: 'absolute', height: BAR_H, alignItems: 'center', justifyContent: 'center' },
-  indicator: { width: 44, height: 44, borderRadius: 22 },
+  indicatorWrap: {
+    position: 'absolute',
+    top: (BAR_H - PILL) / 2,
+    left: 0,
+    width: PILL,
+    height: PILL,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  indicator: {
+    width: PILL,
+    height: PILL,
+    borderRadius: PILL / 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 10,
+  },
 });
