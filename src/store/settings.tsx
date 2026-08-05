@@ -1,5 +1,5 @@
 /**
- * Settings context: theme / region / language / favoriteGenres + content & accessibility prefs.
+ * Settings context: theme / language / favoriteGenres + content & accessibility prefs.
  * Source of truth is the user profile doc; mirrored to AsyncStorage for instant load + offline.
  * Writes use setDoc(..., { merge: true }) so they create/patch the profile map without needing
  * the doc to pre-exist and without clobbering sibling fields.
@@ -25,7 +25,6 @@ export type SwipeSensitivity = 'low' | 'med' | 'high';
 
 type SettingsState = {
   theme: ThemePref;
-  region: string;
   language: string;
   favoriteGenres: string[];
   // Content + accessibility prefs (docs/10 + docs/11).
@@ -38,7 +37,6 @@ type SettingsState = {
 
 const DEFAULTS: SettingsState = {
   theme: 'system',
-  region: 'TH',
   language: 'en',
   favoriteGenres: [],
   autoplayTrailer: true,
@@ -50,7 +48,6 @@ const DEFAULTS: SettingsState = {
 
 export type SettingsContextValue = SettingsState & {
   setTheme: (theme: ThemePref) => void;
-  setRegion: (region: string) => void;
   setLanguage: (language: string) => void;
   setFavoriteGenres: (genres: string[]) => void;
   setAutoplayTrailer: (v: boolean) => void;
@@ -88,7 +85,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({
       ...prev,
       theme: p.theme ?? prev.theme,
-      region: p.region ?? prev.region,
       language: p.language ?? prev.language,
       favoriteGenres: p.favoriteGenres ?? prev.favoriteGenres,
       autoplayTrailer: p.autoplayTrailer ?? prev.autoplayTrailer,
@@ -128,7 +124,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   );
 
   const setTheme = useCallback((theme: ThemePref) => update('theme', theme), [update]);
-  const setRegion = useCallback((region: string) => update('region', region), [update]);
   const setLanguage = useCallback((language: string) => update('language', language), [update]);
   const setFavoriteGenres = useCallback(
     (genres: string[]) => update('favoriteGenres', genres),
@@ -147,7 +142,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       setTheme,
-      setRegion,
       setLanguage,
       setFavoriteGenres,
       setAutoplayTrailer,
@@ -159,7 +153,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [
       state,
       setTheme,
-      setRegion,
       setLanguage,
       setFavoriteGenres,
       setAutoplayTrailer,

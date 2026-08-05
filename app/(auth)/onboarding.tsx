@@ -17,10 +17,6 @@ const LANGS = [
   { key: 'th-TH', labelKey: 'onboarding.langThai' },
   { key: 'en-US', labelKey: 'onboarding.langEnglish' },
 ];
-const REGIONS = [
-  { key: 'TH', labelKey: 'onboarding.regionThailand' },
-  { key: 'US', labelKey: 'onboarding.regionUS' },
-];
 const MIN_GENRES = 3;
 const MAX_GENRES = 5;
 
@@ -29,11 +25,10 @@ export default function OnboardingScreen() {
   const c = Colors[scheme];
   const t = useT();
   const { user } = useAuth();
-  const { setLanguage, setRegion, setFavoriteGenres } = useSettings();
+  const { setLanguage, setFavoriteGenres } = useSettings();
 
   const [step, setStep] = useState<0 | 1>(0);
   const [lang, setLang] = useState('en-US'); // English is the app default
-  const [region, setReg] = useState('TH');
   const [genres, setGenres] = useState<string[]>([]);
 
   const toggleGenre = (slug: string) => {
@@ -46,7 +41,6 @@ export default function OnboardingScreen() {
 
   const goStep2 = () => {
     setLanguage(lang);
-    setRegion(region);
     setStep(1);
   };
 
@@ -109,9 +103,6 @@ export default function OnboardingScreen() {
 
           <Text style={[styles.label, { color: c.text }]}>{t('onboarding.langLabel')}</Text>
           <Segment options={LANGS} value={lang} onChange={setLang} />
-
-          <Text style={[styles.label, { color: c.text }]}>{t('onboarding.regionLabel')}</Text>
-          <Segment options={REGIONS} value={region} onChange={setReg} />
 
           <View style={styles.spacer} />
           <Pressable

@@ -13,7 +13,6 @@ export type UserProfile = {
   displayName: string;
   email: string;
   avatar: string | null;
-  region: string; // e.g. 'TH'
   language: string; // e.g. 'th-TH'
   theme: ThemePref;
   favoriteGenres: string[]; // IGDB genre names

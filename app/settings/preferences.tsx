@@ -1,5 +1,5 @@
 /**
- * Preferences — theme / language / region / favorite genres. All wired to the settings store
+ * Preferences — theme / language / favorite genres. All wired to the settings store
  * (real, persisted). The language toggle sets 'en' | 'th', which drives app-wide i18n.
  */
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -22,11 +22,9 @@ export default function PreferencesScreen() {
   const {
     theme,
     language,
-    region,
     favoriteGenres,
     setTheme,
     setLanguage,
-    setRegion,
     setFavoriteGenres,
   } = useSettings();
 
@@ -38,10 +36,6 @@ export default function PreferencesScreen() {
   const langOpts = [
     { value: 'th', label: t('onboarding.langThai') },
     { value: 'en', label: t('onboarding.langEnglish') },
-  ];
-  const regionOpts = [
-    { value: 'TH', label: t('prefs.regionTH') },
-    { value: 'US', label: t('prefs.regionUS') },
   ];
 
   const toggleGenre = (slug: string) => {
@@ -60,10 +54,6 @@ export default function PreferencesScreen() {
 
       <Row label={t('prefs.language')} color={c.muted}>
         <Segmented c={c} value={language} options={langOpts} onChange={setLanguage} />
-      </Row>
-
-      <Row label={t('prefs.region')} color={c.muted}>
-        <Segmented c={c} value={region} options={regionOpts} onChange={setRegion} />
       </Row>
 
       {/* Favorite genres */}

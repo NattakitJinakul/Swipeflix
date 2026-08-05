@@ -22,7 +22,6 @@ export function defaultProfile(user: User, displayName?: string): UserProfile {
     displayName: displayName ?? user.displayName ?? '',
     email: user.email ?? '',
     avatar: user.photoURL ?? null,
-    region: 'TH',
     language: 'en',
     theme: 'system',
     favoriteGenres: [],
