@@ -19,7 +19,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useT } from '@/src/i18n';
 
 /** AsyncStorage flag key for the swipe tutorial (bump the vN to re-show for everyone). */
-export const TUTORIAL_KEY = 'swipeplay.tutorial.v1';
+export const TUTORIAL_KEY = 'swipescout.tutorial.v1';
 
 const { width: W, height: H } = Dimensions.get('window');
 

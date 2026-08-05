@@ -30,7 +30,7 @@ export default function AboutScreen() {
         <View style={[styles.logo, { backgroundColor: c.primary }]}>
           <Ionicons name="game-controller" size={34} color="#fff" />
         </View>
-        <Text style={[styles.appName, { color: c.text }]}>Swipeplay</Text>
+        <Text style={[styles.appName, { color: c.text }]}>SwipeScout</Text>
         <Text style={[styles.version, { color: c.muted }]}>{t('about.version', { v: APP_VERSION })}</Text>
       </View>
 
@@ -54,7 +54,7 @@ export default function AboutScreen() {
         <LinkRow c={c} icon="document-text-outline" label={t('about.terms')} onPress={() => open('https://example.com/terms')} last />
       </View>
 
-      <Text style={[styles.copyright, { color: c.muted }]}>© 2026 Swipeplay</Text>
+      <Text style={[styles.copyright, { color: c.muted }]}>© 2026 SwipeScout</Text>
     </ScrollView>
   );
 }

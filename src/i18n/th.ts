@@ -92,7 +92,7 @@ export const th = {
     officialSite: 'เว็บทางการ',
     website: 'เว็บไซต์',
     similar: 'เกมแนวเดียวกัน',
-    shareSuffix: '— เจอใน Swipeplay 🎮',
+    shareSuffix: '— เจอใน SwipeScout 🎮',
   },
   play: {
     hubTitle: 'สนุก',

@@ -92,7 +92,7 @@ export const en = {
     officialSite: 'Official site',
     website: 'Website',
     similar: 'Similar games',
-    shareSuffix: '— found on Swipeplay 🎮',
+    shareSuffix: '— found on SwipeScout 🎮',
   },
   play: {
     hubTitle: 'Play',

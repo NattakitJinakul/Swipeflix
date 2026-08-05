@@ -2,8 +2,7 @@
  * Swipe screen — core Tinder-style game deck. Wires CardStack to useDeck + useLibrary:
  * right = like (+ confetti + haptic), left = dislike, up/button = played. Undo, filter bar
  * (category chips + platform toggle), deck-source toggle, surprise-me, empty/error states.
- * Guest-first: guests browse/swipe freely; like/played prompt login (no save). A free-tier
- * swipe quota gate applies only to signed-in users.
+ * Guest-first: guests browse/swipe freely; like/played prompt login (no save).
  */
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -163,7 +162,7 @@ export default function SwipeScreen() {
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top + 8 }]}>
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={[styles.brand, { color: c.primary }]}>Swipeplay</Text>
+        <Text style={[styles.brand, { color: c.primary }]}>SwipeScout</Text>
         <View style={styles.topActions}>
           <IconButton icon="shuffle" color={c.text} onPress={surpriseMe} />
           <IconButton

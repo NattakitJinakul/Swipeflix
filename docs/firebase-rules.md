@@ -1,6 +1,6 @@
 # Firebase setup — rules to paste (for Community + avatar upload)
 
-App: Swipeplay (IGDB game app). Community lets users view each other's public profiles;
+App: SwipeScout (IGDB game app). Community lets users view each other's public profiles;
 avatars can be uploaded. That needs Firestore + Storage enabled with these rules.
 
 ## 1) Firebase Console → Authentication

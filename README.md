@@ -1,4 +1,4 @@
-# Swipeplay 🎮
+# SwipeScout 🎮
 
 A game-discovery mobile app built with Expo + React Native. Swipe through games Tinder-style —
 right to like (อยากเล่น), left to skip, up to mark played (เล่นแล้ว) — powered by the

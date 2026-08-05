@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Swipeplay — IGDB API",
-    "description": "All API requests used by the Swipeplay app. Set collection variables CLIENT_ID, CLIENT_SECRET, then run '0. Get Twitch Token' (it auto-saves ACCESS_TOKEN). IGDB is POST-only with apicalypse text bodies + headers Client-ID and Authorization: Bearer <token>.",
+    "name": "SwipeScout — IGDB API",
+    "description": "All API requests used by the SwipeScout app. Set collection variables CLIENT_ID, CLIENT_SECRET, then run '0. Get Twitch Token' (it auto-saves ACCESS_TOKEN). IGDB is POST-only with apicalypse text bodies + headers Client-ID and Authorization: Bearer <token>.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

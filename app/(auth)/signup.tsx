@@ -70,7 +70,7 @@ export default function SignupScreen() {
           keyboardDismissMode="on-drag"
         >
           <View style={styles.brand}>
-            <Text style={[styles.logo, { color: c.primary }]}>SWIPEPLAY</Text>
+            <Text style={[styles.logo, { color: c.primary }]}>SWIPESCOUT</Text>
             <Text style={[styles.tagline, { color: c.muted }]}>{t('auth.signUpTagline')}</Text>
           </View>
 
