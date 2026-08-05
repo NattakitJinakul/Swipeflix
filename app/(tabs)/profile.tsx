@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TAB_BAR_CLEARANCE } from '@/components/AnimatedTabBar';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { StatBadge } from '@/components/StatBadge';
@@ -82,7 +83,7 @@ export default function ProfileScreen() {
     return (
       <ScrollView
         style={{ backgroundColor: c.background }}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }]}
       >
         <View style={styles.header}>
           <Avatar value={null} size={96} />
@@ -108,7 +109,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: c.background }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }]}
     >
       {/* Header */}
       <View style={styles.header}>

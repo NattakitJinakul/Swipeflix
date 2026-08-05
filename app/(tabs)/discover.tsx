@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TAB_BAR_CLEARANCE } from '@/components/AnimatedTabBar';
 import { CountdownCard } from '@/components/CountdownCard';
 import { EmptyState } from '@/components/EmptyState';
 import { gameImage } from '@/components/game-image';
@@ -110,6 +111,7 @@ export default function DiscoverScreen() {
             items={results}
             numColumns={3}
             onPress={open}
+            contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
             ListEmptyComponent={
               <EmptyState
                 icon="search-outline"
@@ -126,7 +128,7 @@ export default function DiscoverScreen() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24, paddingTop: 12 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE, paddingTop: 12 }}
         >
           {/* Game of the Day hero */}
           {gotd ? (

@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TAB_BAR_CLEARANCE } from '@/components/AnimatedTabBar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useT } from '@/src/i18n';
@@ -57,7 +58,7 @@ export default function PlayHub() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 36, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: insets.bottom + TAB_BAR_CLEARANCE, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero */}

@@ -35,6 +35,13 @@ const TABS: Record<string, { outline: IoniconName; filled: IoniconName; labelKey
 const BAR_H = 62;
 const PILL = 46;
 
+/**
+ * Vertical space the floating bar occupies above the safe-area inset (fade runway + bar + gap).
+ * Scrollable tab screens add `insets.bottom + TAB_BAR_CLEARANCE` as paddingBottom so their last
+ * content clears the bar instead of sliding under it.
+ */
+export const TAB_BAR_CLEARANCE = 96;
+
 export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
   const scheme = useColorScheme() ?? 'dark';
   const c = Colors[scheme];
@@ -56,15 +63,24 @@ export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
   }));
 
   return (
-    <View style={[styles.wrap, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8, backgroundColor: c.background }]}>
+    <View style={[styles.wrap, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }]}>
+      {/* Fade scrim: scrolling content dissolves into the background before it reaches the bar,
+          and the side margins beside the pill stay solid so nothing peeks through. */}
+      <LinearGradient
+        colors={['transparent', c.background, c.background]}
+        locations={[0, 0.62, 1]}
+        style={styles.scrim}
+        pointerEvents="none"
+      />
       <View style={[styles.bar, { shadowColor: '#000' }]} onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
-        {/* Clipped glass layer */}
+        {/* Clipped glass layer — opaque base under the blur kills any content bleed-through */}
         <View style={styles.clip} pointerEvents="none">
-          <BlurView intensity={scheme === 'dark' ? 45 : 65} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: c.surface }]} />
+          <BlurView intensity={scheme === 'dark' ? 30 : 45} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           <View
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.72)' : 'rgba(244,244,246,0.72)' },
+              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.94)' : 'rgba(244,244,246,0.94)' },
             ]}
           />
           <View style={styles.hairline} />
@@ -126,7 +142,8 @@ function TabItem({
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 18, paddingTop: 2, alignItems: 'center' },
+  wrap: { paddingHorizontal: 18, paddingTop: 24, alignItems: 'center' },
+  scrim: { ...StyleSheet.absoluteFillObject },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',

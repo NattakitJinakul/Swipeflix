@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TAB_BAR_CLEARANCE } from '@/components/AnimatedTabBar';
 import { EmptyState } from '@/components/EmptyState';
 import { PosterGrid } from '@/components/PosterGrid';
 import { Colors } from '@/constants/theme';
@@ -135,7 +136,13 @@ export default function WatchlistScreen() {
         ))}
       </View>
 
-      <PosterGrid items={data} numColumns={3} onPress={onPressItem} ListEmptyComponent={emptyComponent} />
+      <PosterGrid
+        items={data}
+        numColumns={3}
+        onPress={onPressItem}
+        contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }}
+        ListEmptyComponent={emptyComponent}
+      />
     </View>
   );
 }
