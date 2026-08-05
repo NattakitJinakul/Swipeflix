@@ -12,10 +12,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.swipeflix.app"
+      "bundleIdentifier": "com.swipescout.app"
     },
     "android": {
-      "package": "com.swipeflix.app",
+      "package": "com.swipescout.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
