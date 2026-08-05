@@ -33,6 +33,11 @@ system, plus in-app "while using" shots. Signed in as a real account, then guest
 |---|---|---|---|---|---|
 | ![](16-discover-search.png) | ![](16b-search-results.png) | ![](17-swipe-filters.png) | ![](18-swipe-in-action.png) | ![](18b-swipe-drag.png) | ![](19-library-played.png) |
 
+## Liked games on public profile (with privacy toggle)
+| Public profile — grid shown | Setting toggle | Public profile — hidden |
+|---|---|---|
+| ![](26-public-liked-games.png) | ![](27-settings-liked-toggle.png) | ![](28-public-liked-hidden.png) |
+
 ## Auth & guest
 | Sign-out confirm | Login | Sign up | Sign-in popup | Guest profile | Guest library |
 |---|---|---|---|---|---|
