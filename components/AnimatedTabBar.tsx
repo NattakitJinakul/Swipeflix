@@ -133,7 +133,9 @@ function TabItem({
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 18, paddingTop: 6, alignItems: 'center' },
+  // Absolute so the bar is OUT of the navigator's column flow: the scene fills full height and
+  // content scrolls visibly behind the transparent area — only the pill is drawn.
+  wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 6, alignItems: 'center' },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',

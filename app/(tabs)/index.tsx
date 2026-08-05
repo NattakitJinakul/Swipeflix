@@ -21,6 +21,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActionButton, ACTION_COLORS } from '@/components/ActionButton';
+import { TAB_BAR_CLEARANCE } from '@/components/AnimatedTabBar';
 import { CardStack } from '@/components/CardStack';
 import { EmptyState } from '@/components/EmptyState';
 import { gameImage } from '@/components/game-image';
@@ -250,7 +251,7 @@ export default function SwipeScreen() {
 
       {/* Action buttons (below card) — glowing buttons floating on the background */}
       {!deck.error && !deckEmpty ? (
-        <View style={styles.actions}>
+        <View style={[styles.actions, { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE }]}>
           <ActionButton
             size={62}
             icon="thumbs-down"
