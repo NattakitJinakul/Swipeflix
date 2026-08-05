@@ -11,7 +11,12 @@ export default function TabLayout() {
   const t = useT();
   return (
     <Tabs
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        // Float the bar over content so screens scroll BEHIND the glass; screens add
+        // TAB_BAR_CLEARANCE bottom padding so their last item still clears the bar.
+        tabBarStyle: { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0 },
+      }}
       tabBar={(props) => <AnimatedTabBar {...props} />}
     >
       <Tabs.Screen name="index" options={{ title: t('tabs.swipe') }} />

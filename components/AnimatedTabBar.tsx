@@ -36,11 +36,11 @@ const BAR_H = 62;
 const PILL = 46;
 
 /**
- * Vertical space the floating bar occupies above the safe-area inset (fade runway + bar + gap).
- * Scrollable tab screens add `insets.bottom + TAB_BAR_CLEARANCE` as paddingBottom so their last
- * content clears the bar instead of sliding under it.
+ * Vertical space the floating glass bar occupies above the safe-area inset (bar height + gap).
+ * The bar floats over content (content scrolls visibly behind the glass); scrollable tab screens
+ * add `insets.bottom + TAB_BAR_CLEARANCE` as paddingBottom so their LAST item still ends above it.
  */
-export const TAB_BAR_CLEARANCE = 96;
+export const TAB_BAR_CLEARANCE = 90;
 
 export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
   const scheme = useColorScheme() ?? 'dark';
@@ -63,24 +63,15 @@ export function AnimatedTabBar({ state, navigation }: BottomTabBarProps) {
   }));
 
   return (
-    <View style={[styles.wrap, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }]}>
-      {/* Fade scrim: scrolling content dissolves into the background before it reaches the bar,
-          and the side margins beside the pill stay solid so nothing peeks through. */}
-      <LinearGradient
-        colors={['transparent', c.background, c.background]}
-        locations={[0, 0.62, 1]}
-        style={styles.scrim}
-        pointerEvents="none"
-      />
+    <View style={[styles.wrap, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }]} pointerEvents="box-none">
       <View style={[styles.bar, { shadowColor: '#000' }]} onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
-        {/* Clipped glass layer — opaque base under the blur kills any content bleed-through */}
+        {/* Translucent glass — content scrolls visibly behind it */}
         <View style={styles.clip} pointerEvents="none">
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: c.surface }]} />
-          <BlurView intensity={scheme === 'dark' ? 30 : 45} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <BlurView intensity={scheme === 'dark' ? 45 : 65} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           <View
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.94)' : 'rgba(244,244,246,0.94)' },
+              { backgroundColor: scheme === 'dark' ? 'rgba(22,22,29,0.72)' : 'rgba(244,244,246,0.72)' },
             ]}
           />
           <View style={styles.hairline} />
@@ -142,8 +133,7 @@ function TabItem({
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 18, paddingTop: 24, alignItems: 'center' },
-  scrim: { ...StyleSheet.absoluteFillObject },
+  wrap: { paddingHorizontal: 18, paddingTop: 6, alignItems: 'center' },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
