@@ -16,16 +16,21 @@ import {
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
-import type { PublicProfile } from '../types/user';
+import type { PublicGame, PublicProfile } from '../types/user';
 import { auth, db } from './config';
 
-export type ProfileFields = { displayName?: string; avatar?: string | null };
+export type ProfileFields = {
+  displayName?: string;
+  avatar?: string | null;
+  showLikedGames?: boolean;
+};
 
 /** Patch the private profile map (merge) + mirror displayName onto the Firebase Auth user. */
 export async function updateProfileFields(uid: string, fields: ProfileFields): Promise<void> {
   const patch: Record<string, unknown> = {};
   if (fields.displayName !== undefined) patch.displayName = fields.displayName;
   if (fields.avatar !== undefined) patch.avatar = fields.avatar;
+  if (fields.showLikedGames !== undefined) patch.showLikedGames = fields.showLikedGames;
   await setDoc(doc(db, 'users', uid), { profile: patch }, { merge: true });
   if (fields.displayName && auth.currentUser) {
     await fbUpdateProfile(auth.currentUser, { displayName: fields.displayName }).catch(() => {});
@@ -56,6 +61,7 @@ const toPublic = (data: Record<string, unknown>): PublicProfile | null => {
     topGenres: Array.isArray(p.topGenres)
       ? (p.topGenres as { name: string; percent: number }[])
       : [],
+    likedGames: Array.isArray(p.likedGames) ? (p.likedGames as PublicGame[]) : [],
   };
 };
 

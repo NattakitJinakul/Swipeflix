@@ -26,6 +26,7 @@ export function defaultProfile(user: User, displayName?: string): UserProfile {
     language: 'en',
     theme: 'system',
     favoriteGenres: [],
+    showLikedGames: true,
   };
 }
 

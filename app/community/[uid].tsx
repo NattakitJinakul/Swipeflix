@@ -2,17 +2,21 @@
  * Community — a single player's public profile (avatar, name, liked count, taste chart).
  * Read-only, guest-viewable. getPublicProfile returns null on missing/unreachable data.
  */
-import { useLocalSearchParams } from 'expo-router';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
+import { gameImage } from '@/components/game-image';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getPublicProfile } from '@/src/firebase/profiles';
 import { useT } from '@/src/i18n';
 import type { PublicProfile } from '@/src/types/user';
+
+const POSTER_W = (Dimensions.get('window').width - 16 * 2 - 10 * 2) / 3;
 
 export default function CommunityProfileScreen() {
   const { uid } = useLocalSearchParams<{ uid: string }>();
@@ -67,6 +71,30 @@ export default function CommunityProfileScreen() {
           {t('community.gamesLiked', { n: profile.likedCount })}
         </Text>
       </View>
+
+      {profile.likedGames.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: c.text }]}>{t('community.likedTitle')}</Text>
+          <View style={styles.grid}>
+            {profile.likedGames.map((g) => {
+              const uri = gameImage(g.image);
+              return (
+                <Pressable
+                  key={g.id}
+                  onPress={() => router.push(`/game/${g.id}`)}
+                  style={({ pressed }) => [styles.poster, { backgroundColor: c.surface, opacity: pressed ? 0.75 : 1 }]}
+                >
+                  {uri ? (
+                    <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} cachePolicy="memory-disk" />
+                  ) : (
+                    <Text style={[styles.posterFallback, { color: c.muted }]} numberOfLines={3}>{g.name}</Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
 
       {topGenres.length > 0 ? (
         <View style={styles.section}>
@@ -124,4 +152,15 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   chipText: { fontSize: 13, fontWeight: '600' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  poster: {
+    width: POSTER_W,
+    aspectRatio: 2 / 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+  },
+  posterFallback: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
 });

@@ -23,7 +23,7 @@ export default function SettingsIndex() {
   const router = useRouter();
   const t = useT();
   const tutorial = useFirstRun(TUTORIAL_KEY);
-  const { isGuest, signOut } = useAuth();
+  const { isGuest, signOut, profile, updateProfile } = useAuth();
 
   const confirmSignOut = () =>
     Alert.alert(t('account.signOutConfirm'), t('account.signOutConfirmBody'), [
@@ -59,7 +59,17 @@ export default function SettingsIndex() {
 
       <Group title={t('settings.groupContent')} color={c.muted}>
         <ToggleRow c={c} icon="eye-off-outline" label={t('settings.hideAdult')} value={hideAdult} onChange={setHideAdult} />
-        <ToggleRow c={c} icon="notifications-outline" label={t('settings.notifyNew')} value={notifyNew} onChange={setNotifyNew} last />
+        <ToggleRow c={c} icon="notifications-outline" label={t('settings.notifyNew')} value={notifyNew} onChange={setNotifyNew} last={isGuest} />
+        {!isGuest ? (
+          <ToggleRow
+            c={c}
+            icon="game-controller-outline"
+            label={t('settings.showLikedGames')}
+            value={profile?.showLikedGames !== false}
+            onChange={(v) => void updateProfile({ showLikedGames: v }).catch(() => {})}
+            last
+          />
+        ) : null}
       </Group>
 
       <Group title={t('settings.groupData')} color={c.muted}>

@@ -44,6 +44,8 @@ export default function ProfileScreen() {
   const topGenres = dna.topGenres.slice(0, 5);
 
   // Mirror a compact public summary to Firestore for the Community feature (best-effort).
+  // Liked games are only exposed when the user allows it (privacy toggle in Settings).
+  const showLikedGames = profile?.showLikedGames !== false;
   useEffect(() => {
     const uid = user?.uid;
     if (!uid) return;
@@ -53,9 +55,12 @@ export default function ProfileScreen() {
       favoriteGenres: profile?.favoriteGenres ?? [],
       likedCount: liked.length,
       topGenres: topGenres.map((g) => ({ name: g.name, percent: g.percent })),
+      likedGames: showLikedGames
+        ? liked.slice(0, 24).map((g) => ({ id: g.id, name: g.name, image: g.image ?? null }))
+        : [],
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, liked.length, displayName, profile?.avatar]);
+  }, [user?.uid, liked.length, displayName, profile?.avatar, showLikedGames]);
 
   // ---- Name edit modal ----
   const [editingName, setEditingName] = useState(false);

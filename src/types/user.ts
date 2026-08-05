@@ -17,7 +17,11 @@ export type UserProfile = {
   language: string; // e.g. 'th-TH'
   theme: ThemePref;
   favoriteGenres: string[]; // IGDB genre names
+  showLikedGames: boolean; // privacy: expose liked games on the public (Community) profile
 };
+
+/** A compact game reference stored on the public profile (cover grid). */
+export type PublicGame = { id: number; name: string; image: string | null };
 
 /** Compact public summary written to users/{uid}.public for the Community feature. */
 export type PublicProfile = {
@@ -27,6 +31,7 @@ export type PublicProfile = {
   favoriteGenres: string[];
   likedCount: number;
   topGenres: { name: string; percent: number }[];
+  likedGames: PublicGame[]; // empty when the user hides them (showLikedGames = false)
 };
 
 export type Subscription = {
