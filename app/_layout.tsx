@@ -33,7 +33,7 @@ function RootNavigator() {
     const segs = segments as string[];
     const inAuth = segs[0] === '(auth)';
     // Guests: no redirect. Signed-in users sitting on the login/signup LANDING go to tabs —
-    // but keep pricing/onboarding reachable while signed in (upgrade + preferences flows).
+    // but keep onboarding reachable while signed in (preferences flow).
     const onAuthLanding = inAuth && (segs[1] === 'login' || segs[1] === 'signup' || segs[1] === undefined);
     if (user && onAuthLanding) router.replace('/(tabs)');
   }, [user, loading, segments, router]);
@@ -64,7 +64,6 @@ function RootNavigator() {
       <Stack.Screen name="play" options={{ headerShown: false }} />
       <Stack.Screen name="community" options={{ headerShown: false }} />
       <Stack.Screen name="browse" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );
 }

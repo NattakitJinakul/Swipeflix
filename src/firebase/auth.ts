@@ -1,6 +1,6 @@
 /**
  * Auth operations (Firebase JS SDK). Email/password + Google credential.
- * New users get a users/{uid} doc seeded with default profile + free subscription (docs/09).
+ * New users get a users/{uid} doc seeded with a default profile.
  */
 import {
   createUserWithEmailAndPassword,

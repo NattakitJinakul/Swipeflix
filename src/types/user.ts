@@ -1,12 +1,8 @@
 /**
- * User + subscription types. Firestore users/{uid} per docs/03 + docs/09.
+ * User + public-profile types. Firestore users/{uid} per docs/03.
  */
 
-export type Plan = 'free' | 'plus' | 'pro';
-
 export type ThemePref = 'system' | 'light' | 'dark';
-
-export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing';
 
 export type UserProfile = {
   uid: string;
@@ -31,10 +27,4 @@ export type PublicProfile = {
   likedCount: number;
   topGenres: { name: string; percent: number }[];
   likedGames: PublicGame[]; // empty when the user hides them (showLikedGames = false)
-};
-
-export type Subscription = {
-  plan: Plan;
-  renewsAt: string | null; // ISO date; null for free
-  status: SubscriptionStatus;
 };
